@@ -5,19 +5,21 @@ import os
 NT = 16
 NR = 64
 params_list = []
-snr_min = 11.0
-snr_max = 17.0
-intervals = 8
+snr_min = 4.0
+snr_max = 10.0
+test_points = 200
+intervals = numpy.linspace(snr_min, snr_max, test_points+1)
 
-for snr_k in np.linspace(snr_min, snr_max, intervals+1)[:-1]:
-    params = {
-        'modulation': 16,
+params_list = []
+for k in range(0, testing_points):
+    params_k = {
+        'modulation': 'QAM_16',
         'NT': NT,
         'NR': NR,
-        'snr_min': snr_k,
-        'snr_max': snr_k+1.
+        'snr_min': intervals[k],
+        'snr_max': intervals[k+1]
     }
-    params_list.append(params)
+params_list.append(params)
 
 seq_len = 2
 data_dir = './simulated_data'
