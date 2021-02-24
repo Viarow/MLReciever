@@ -6,7 +6,7 @@ import cvxpy as cp
 from tqdm import tqdm
 
 
-def zero-forcing(y, H):
+def zero_forcing(y, H):
     '''
     Inputs: 
     y.shape = [batch_size, N] = [batch_size, 2*NR]
