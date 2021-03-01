@@ -6,6 +6,8 @@ from MIMO_dataset import sigs_input_fn_train, sigs_input_fn_test
 from NN_detector import FCNet
 import argparse
 from classics import zero_forcing, MMSE
+from tqdm import tqdm
+import os
 
 
 def parse_mimo_args():
@@ -20,25 +22,25 @@ def parse_mimo_args():
     parser.add_argument('--batch_size', type=int, required=True, default=2, help='training batch size')
     parser.add_argument('--seq_len', type=int, required=True, default=2, help='sequence length')
     parser.add_argument('--epochs', type=int, required=True, default=10)
+    parser.add_argument('--data_dir', type=str, required=True, default='./simulated_data')
     parser.add_argument('--mapping_file', type=str, required=True, default='./simulated_data/mappings.txt')
     parser.add_argument('--gpu', type=str, required=False, default='0')
     parser.add_argument('--fig_dir', type=str, required=True, default='figures/')
     #parser.add_argument('--ckpt_load', type=str, required=False, help="Path of the checkpoint to load") ## e.g. './checkpoint_dir'
     #parser.add_argument('--ckpt_save', type=str, required=False, help="Path of the checkpoint to save") ## e.g. './checkpoint_dir/MyModel.ckpt'
-    parser.add_argument()
     args = parser.parse_args()
     return args
 
 
-def parse_filenames(ref_file):
+def parse_filenames(ref_file, data_dir):
     file_object = open(ref_file, 'r')
-    sample_list = file_object.readlines
+    sample_list = file_object.readlines()
     filenames = []
     labels = []
     for line in sample_list:
         sample = line.split('\n')[0]
-        filename = sample_list.split('/')[0]
-        label = sample_list.split('/')[1]
+        filename = os.path.join(data_dir, sample.split('/')[0])
+        label = os.path.join(data_dir, sample.split('/')[1])
         filenames.append(filename)
         labels.append(label)
     file_object.close()
@@ -47,9 +49,10 @@ def parse_filenames(ref_file):
 
 def train_step(model, yBatch, xBatch, constellation, loss_object, optimizer):
     with tf.GradientTape() as tape:
+        sBatch = tf.gather(constellation, xBatch)
         sHatBatch = model(yBatch)
         xHatBatch = demodulate(sHatBatch, constellation)
-        loss = loss_object(xBatch, xHatBatch)
+        loss = loss_object(sBatch, sHatBatch)
     gradients = tape.gradient(loss, model.trainable_variables)
     optimizer.apply_gradients(zip(gradients, model.trainable_variables))
     return xHatBatch, loss
@@ -59,20 +62,20 @@ def train(args, model, constellation):
     loss_object = tf.keras.losses.MeanSquaredError()
     train_loss = tf.keras.metrics.MeanSquaredError(name='train_loss')
     optimizer = tf.keras.optimizers.Adam(learning_rate=args.learning_rate)
-    filenames, labels = parse_filenames(args.mapping_file)
+    filenames, labels = parse_filenames(args.mapping_file, args.data_dir)
     dataset_train = sigs_input_fn_train(filenames, labels, batch_size=args.batch_size)
 
     for epoch in range(0, args.epochs):
         train_loss.reset_states()
         SER = []
-        for yBatch, xBatch in dataset_train:
+        for yBatch, xBatch in tqdm(dataset_train):
             y_shape = yBatch.shape
             yBatch = tf.reshape(yBatch, [-1, y_shape[2]])
             x_shape = xBatch.shape
             xBatch = tf.reshape(xBatch, [-1, x_shape[2]])
-            xHatBatch, loss = train_step(model, yBatch, xBatch, xBatch, 
+            xHatBatch, loss = train_step(model, yBatch, xBatch, 
                                         constellation, loss_object, optimizer)
-            train_loss(loss)
+            train_loss.update_state(xBatch, xHatBatch)
             SER.append(symbol_error_rate(xBatch, xHatBatch))
         train_loss_average = train_loss.result()
         SER_average = numpy.sum(numpy.array(SER)) / len(SER)
@@ -84,7 +87,7 @@ def test(args, model, constellation):
     intervals = numpy.linspace(args.snr_min, args.snr_max, args.test_points+1)
     SER_list = []
     SNRdB_list = []
-    for k in range(0, args.testing_points):
+    for k in range(0, args.test_points):
         params_k = {
             'modulation': args.modulation,
             'data': False,
@@ -126,9 +129,11 @@ def main():
         os.environ["CUDA_VISIBLE_DEVICES"] = args.gpu
     mod_n = int(args.modulation.split('_')[1])
     constellation = modulate(mod_n)
+    
+    #init = tf.compat.v1.global_variables_initializer()
+    #with tf.compat.v1.Session() as sess:
+        #sess.run(init)
     model = FCNet(args.NR, args.NT)
-    sess = tf.compat.v1.Session()
-    sess.run(tf.global_variables_initializer())
     train(args, model, constellation)
     SNRdB_list, SER_list = test(args, model, constellation)
     plot_fig(args, SNRdB_list, SER_list, args.fig_dir)

@@ -36,7 +36,8 @@ def symbol_error_rate(xBatch, xHatBatch):
     NR = xBatch.shape[1]  # 2*NR
     SER = 0.
     for k in np.arange(0, batch_size):
-        ser_k = tf.reduce_sum(tf.equal(xBatch[k], xHatBatch[k]))
+        #print("tf.equal(xBatch[k], xHatBatch[k]):", tf.equal(xBatch[k], xHatBatch[k]))
+        ser_k = tf.reduce_sum(tf.cast(tf.equal(xBatch[k], xHatBatch[k]), tf.int32))
         ser_k = tf.cast(ser_k/NR, tf.float32)
         SER += ser_k
     
@@ -54,13 +55,13 @@ def plot_fig(args, SNRdB, SER_list, save_path):
         SER_MMSE.append(SER_k['MMSE'])
 
     fig, ax = plt.subplots()
-    ax.plot(SNRdB, SER_NN, '-r', label='Neural Network')
-    ax.plot(SNRdB, SER_ZF, '--b', label='Zero Forcing')
-    ax.plot(SNRdB, SER_MMSE, '--g', label='MMSE')
+    ax.scatter(SNRdB, SER_NN, c='r', alpha=0.7, label='Neural Network')
+    ax.scatter(SNRdB, SER_ZF, c='b', alpha=0.7, label='Zero Forcing')
+    ax.scatter(SNRdB, SER_MMSE, c='g', alpha=0.7, label='MMSE')
     leg = ax.legend()
     ax.legend(loc='lower left', frameon=True)
     plt.xlabel('SNR(dB)')
     plt.ylabel('SER')
-    template = 'NT{:d}_NR{:d}_'.format(args.NT, args.NR) + args.modulation
+    template = 'NT{:d}_NR{:d}_'.format(args.NT, args.NR) + args.modulation + '_epochs_' + args.epochs
     plt.grid(template)
     plt.savefig(os.path.join(save_path, template+'.png'))

@@ -1,5 +1,3 @@
-y_NR64_seqlen2_snr9.97to10.00.npy/x_NT16_seqlen2_snr9.97to10.00.npy
-y_NR64_seqlen2_snr9.97to10.00.npy/x_NT16_seqlen2_snr9.97to10.00.npy
 y_NR64_seqlen2_snr4.00to4.03.npy/x_NT16_seqlen2_snr4.00to4.03.npy
 y_NR64_seqlen2_snr4.03to4.06.npy/x_NT16_seqlen2_snr4.03to4.06.npy
 y_NR64_seqlen2_snr4.06to4.09.npy/x_NT16_seqlen2_snr4.06to4.09.npy

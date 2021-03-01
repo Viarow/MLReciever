@@ -21,7 +21,7 @@ def zero_forcing(y, H):
     HtH = tf.matmul(H, H, transpose_a=True) 
 
     # Inverse Gramian
-    HtHinv = tf.matrix_inverse(HtH)
+    HtHinv = tf.linalg.inv(HtH)
 
     #Zero-Forcing Detector
     s = batch_matvec_mul(HtHinv, Hty)
@@ -45,7 +45,7 @@ def MMSE(y, H, noise_sigma):
     HtH = tf.matmul(H, H, transpose_a=True) 
 
     # Inverse Gramian
-    HtHinv = tf.matrix_inverse(HtH + tf.reshape(tf.sqaure(noise_sigma)/2, [-1, 1, 1]) * tf.eye(tf.shape(H)[-1], batch_shape=[tf.shape(H)[0]]))
+    HtHinv = tf.linalg.inv(HtH + tf.reshape(tf.math.sqrt(noise_sigma)/2, [-1, 1, 1]) * tf.eye(tf.shape(H)[-1], batch_shape=[tf.shape(H)[0]]))
 
     # MMSE detector
     s = batch_matvec_mul(HtHinv, Hty)
