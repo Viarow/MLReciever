@@ -87,6 +87,7 @@ def test(args, model, constellation):
     for k in range(0, args.testing_points):
         params_k = {
             'modulation': args.modulation,
+            'data': False,
             'NT': args.NT,
             'NR': args.NR,
             'snr_min': intervals[k],
@@ -126,7 +127,7 @@ def main():
     mod_n = int(args.modulation.split('_')[1])
     constellation = modulate(mod_n)
     model = FCNet(args.NR, args.NT)
-    sess = tf.Session()
+    sess = tf.compat.v1.Session()
     sess.run(tf.global_variables_initializer())
     train(args, model, constellation)
     SNRdB_list, SER_list = test(args, model, constellation)

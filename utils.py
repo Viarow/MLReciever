@@ -6,7 +6,7 @@ import os
 
 def modulate(mod_n):
     n = mod_n
-    constellation = np.linspace(-np.sqrt(n)+1, np.sqrt(n)-1, np.sqrt(n))
+    constellation = np.linspace(-np.sqrt(n)+1, np.sqrt(n)-1, int(np.sqrt(n)))
     alpha = np.sqrt((constellation ** 2).mean())
     constellation = constellation / (alpha * np.sqrt(2))
     constellation = tf.Variable(constellation, trainable=False, dtype=tf.float32)

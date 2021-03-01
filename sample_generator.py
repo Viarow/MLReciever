@@ -1,4 +1,4 @@
-import tensorflow as tensorflow
+import tensorflow as tf
 import numpy as np
 from utils import *
 import scipy.linalg as linalg
@@ -53,7 +53,7 @@ class Generator(object):
     def QAM_N_const(self, n=None):
         if n==None:
             n = self.mod_n
-        constellation = np.linspace(-np.sqrt(n)+1, np.sqrt(n)-1, np.sqrt(n))
+        constellation = np.linspace(-np.sqrt(n)+1, np.sqrt(n)-1, int(np.sqrt(n)))
         alpha = np.sqrt((constellation ** 2).mean())
         constellation = constellation / (alpha * np.sqrt(2))
         constellation = tf.Variable(constellation, trainable=False, dtype=tf.float32)
@@ -66,21 +66,21 @@ class Generator(object):
                                         dtype=tf.int32)
         if self.mod_scheme == 'MIX':
             # mod_names: 0 --> QAM4, 1 --> QAM16, 2 --> QAM64
-            mod_names = tf.random_uniform(shape=[self.batch_size, self.NT],
+            mod_names = tf.random.uniform(shape=[self.batch_size, self.NT],
                                           minval=0, maxval=3, dtype=tf.int32)
             mod_names = nf.tile(mod_names, [1,2])
             mapping = tf.one_hot(mod_names, depth=3, dtype=tf.int32)
-            indices_QAM64 = tf.random_uniform(
+            indices_QAM64 = tf.random.uniform(
                 shape=[self.batch_size, 2*self.NT,1], 
                 minval=0, 
                 maxval=8,
                 dtype=tf.int32)
-            indices_QAM16 = tf.random_uniform(
+            indices_QAM16 = tf.random.uniform(
                 shape=[self.batch_size, 2*self.NT,1], 
                 minval=0, 
                 maxval=4,
                 dtype=tf.int32)
-            indices_QAM4 = tf.random_uniform(
+            indices_QAM4 = tf.random.uniform(
                 shape=[self.batch_size, 2*self.NT,1], 
                 minval=0, 
                 maxval=2,
@@ -112,41 +112,41 @@ class Generator(object):
             H = H
         else: 
             # generate iid channels
-            Hr = tf.random_normal(shape=[self.batch_size, self.NR, self.NT], stddev=1./np.sqrt(2.*self.NR), dtype=tf.float32)
-            Hr = tf.random_normal(shape=[self.batch_size, self.NR, self.NT], stddev=1./np.sqrt(2.*self.NR), dtype=tf.float32)
+            Hr = tf.random.normal(shape=[self.batch_size, self.NR, self.NT], stddev=1./np.sqrt(2.*self.NR), dtype=tf.float32)
+            Hi = tf.random.normal(shape=[self.batch_size, self.NR, self.NT], stddev=1./np.sqrt(2.*self.NR), dtype=tf.float32)
             h1 = tf.concat([Hr, -1.*Hi], axis=2)
             h2 = tf.concat([Hi, Hr], axis=2)
             H = tf.concat([h1, h2], axis=1)
             self.Hdataset_powerdB = 0.
         
         #Channel Noise
-        snr_db = tf.random_uniform(shape=[self.batch_size, 1], 
+        snr_db = tf.random.uniform(shape=[self.batch_size, 1], 
                                    minval=snr_db_min, maxval=snr_db_max,
                                    dtype=tf.float32)
         if self.mod_scheme == 'MIX':
             print(self.constellation)
-            powQAM4 = 10. * tf.log((tf.square(self.constellation[0]) + tf.square(self.constellation[7]))/2.) / tf.log(10.)
-            powQAM16 = 10. * tf.log((self.constellation[0] ** 2 + self.constellation[2] ** 2 + self.constellation[5] ** 2 + self.constellation[7] ** 2)/4.)/tf.log(10.)
+            powQAM4 = 10. * tf.math.log((tf.square(self.constellation[0]) + tf.square(self.constellation[7]))/2.) / tf.math.log(10.)
+            powQAM16 = 10. * tf.math.log((self.constellation[0] ** 2 + self.constellation[2] ** 2 + self.constellation[5] ** 2 + self.constellation[7] ** 2)/4.)/tf.math.log(10.)
             snr_adjusments = tf.cast(self.mix_mapping, tf.float32) * [[[0,-powQAM16-7.,-powQAM4-14.]]]
             snr_adjusments = tf.reduce_sum(snr_adjusments, axis=2) 
             snr_adjusments = tf.expand_dims(snr_adjusments, axis=1)
             H = H * (10. ** (snr_adjusments/10.))
             print('seessssse', H)
 
-        wr = tf.random_normal(shape=[self.batch_size, self.NR], stddev=1./np.sqrt(2.), dtype=tf.float32, name='w')
-        wr = tf.random_normal(shape=[self.batch_size, self.NR], stddev=1./np.sqrt(2.), dtype=tf.float32, name='w')
+        wr = tf.random.normal(shape=[self.batch_size, self.NR], stddev=1./np.sqrt(2.), dtype=tf.float32, name='w')
+        wi = tf.random.normal(shape=[self.batch_size, self.NR], stddev=1./np.sqrt(2.), dtype=tf.float32, name='w')
         w = tf.concat([wr, wi], axis=1)
 
         #SNR
-        H_powerdB = 10.*tf.log(tf.reduce_mean(tf.reduce_sum(tf.square(H), axis=1), axis=0)) / tf.log(10.)
+        H_powerdB = 10.*tf.math.log(tf.reduce_mean(tf.reduce_sum(tf.square(H), axis=1), axis=0)) / tf.math.log(10.)
         average_H_powerdB = tf.reduce_mean(H_powerdB)
-        average_x_powerdB = 10.*tf.log(tf.reduce_mean(tf.reduce_sum(tf.square(x), axis=1), axis=0)) / tf.log(10.)
+        average_x_powerdB = 10.*tf.math.log(tf.reduce_mean(tf.reduce_sum(tf.square(x), axis=1), axis=0)) / tf.math.log(10.)
         w = w * tf.pow(10., (10.*np.log10(self.NT) + self.Hdataset_powerdB - snr_db - 10.*np.log10(self.NR))/20.)
         complexnoise_sigma = tf.pow(10., (10.*np.log10(self.NT) + self.Hdataset_powerdB - snr_db - 10.*np.log10(self.NR))/20.)
 
         y = batch_matvec_mul(H, x) + w
-        sig_powdB = 10. * tf.log(tf.reduce_mean(tf.reduce_sum(tf.square(batch_matvec_mul(H,x)), axis=1), axis=0)) / tf.log(10.)
-        noise_powedB = 10. * tf.log(tf.reduce_mean(tf.reduce_sum(tf.square(w), axis=1), axis=0)) / tf.log(10.)
+        sig_powdB = 10. * tf.math.log(tf.reduce_mean(tf.reduce_sum(tf.square(batch_matvec_mul(H,x)), axis=1), axis=0)) / tf.math.log(10.)
+        noise_powedB = 10. * tf.math.log(tf.reduce_mean(tf.reduce_sum(tf.square(w), axis=1), axis=0)) / tf.math.log(10.)
         actual_snrdB = sig_powdB - noise_powedB
 
         if dataset_flag:
@@ -162,8 +162,7 @@ def produce_simulation(params, seq_len, data_dir, file_object):
     indices = generator.QAM_N_ind()
     xBatch = indices
     sBatch = generator.modulate(indices)
-    yBatch, HBatch, noise_sigma, SNRdB = generator.channel(sBatch, params['snr_min'], params['snr_max']
-                                                           H=None, dataset_flag=False)
+    yBatch, HBatch, noise_sigma, SNRdB = generator.channel(sBatch, params['snr_min'], params['snr_max'], H=None, dataset_flag=False)
 
     filename_y = "y_NR{:d}_seqlen{:d}_snr{:.2f}to{:.2f}.npy".format(params['NR'], seq_len, params['snr_min'], params['snr_max'])
     np.save(os.path.join(data_dir, filename_y), yBatch)

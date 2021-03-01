@@ -44,6 +44,5 @@ def sigs_input_fn_test(params, batch_size):
     indices = generator.QAM_N_ind()
     xBatch = indices
     sBatch = generator.modulate(indices)
-    yBatch, HBatch, noise_sigma, SNRdB = generator.channel(sBatch, params['snr_min'], params['snr_max']
-                                                           H=None, dataset_flag=False)
+    yBatch, HBatch, noise_sigma, SNRdB = generator.channel(sBatch, params['snr_min'], params['snr_max'], H=None, dataset_flag=False)
     return yBatch, xBatch, HBatch, noise_sigma, SNRdB
