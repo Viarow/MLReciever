@@ -3,7 +3,7 @@ import numpy
 from torch import nn
 from torch.nn.parameter import Parameter, UninitializedParameter
 import torch.nn.init as init
-from network_utils import batch_matvec_mul
+from network.network_utils import batch_matvec_mul
 
 class MMNet_linear(nn.Module):
     def __init__(self, params):
@@ -32,7 +32,7 @@ class MMNet_iid_linear(nn.Module):
         self.NT = 2*params['NT']
         self.NR = 2*params['NR']
         self.batch_size = params['batch_size']
-        self.register_parameter(name='weight', None)
+        self.register_parameter(name='weight', param=None)
 
     def reset_parameters(self):
         pass
@@ -52,7 +52,7 @@ class DetNet_linear(nn.Module):
         self.NT = 2*params['NT']
         self.NR = 2*params['NR']
         self.batch_size = params['batch_size']
-        self.register_parameter(name='weight', None)
+        self.register_parameter(name='weight', param=None)
         self.theta1 = Parameter(torch.Tensor(1, self.NT, self.NT).repeat(self.batch_size, 1, 1))
         #self.theta2 = Parameter(torch.Tensor(1))
         self.theta3 = Parameter(torch.Tensor(1, self.NT))

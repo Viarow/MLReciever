@@ -1,6 +1,6 @@
 import torch
 from torch import nn
-from layer import Layer
+from network.layer import Layer
 
 
 class MMNet(nn.Module):

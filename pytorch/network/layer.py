@@ -1,7 +1,8 @@
 import torch
 from torch import nn
-from denoiser import *
-from linear import *
+from network.denoiser import *
+from network.linear import *
+from network.network_utils import batch_matvec_mul
 import sys
 
 class Layer(nn.Module):
@@ -19,8 +20,8 @@ class Layer(nn.Module):
         xhat = data_blob['xhat']    #predicted xhat in each layer
         r = data_blob['r']      #difference between y and H * xhat
         features = {
-            'y': data_blob['y']
-            'H': data_blob['H']
+            'y': data_blob['y'],
+            'H': data_blob['H'],
             'noise_sigma': data_blob['noise_sigma']
         }                           #contains y, H, noise_sigma
 

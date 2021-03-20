@@ -16,7 +16,7 @@ def get_QAMconstellation(n):
 def QAM_demodulate(y, constellation):
     shape = y.shape
     y = torch.reshape(y, (-1, 1))
-    constellation = torch.reshape(constellation, (-1, 1))
+    constellation = torch.reshape(constellation, (1, -1))
     indices = torch.argmin(torch.abs(y - constellation), dim=1).type(torch.IntTensor)
     indices = torch.reshape(indices, shape)
     return indices
@@ -64,13 +64,15 @@ def count_parameters(model):
 
 def plot_epochs(params, args, SNRdB_range, error_list):
     # Comparing between different epochs for a specific architecture
+    error_list = [error_list[-1]]
     num_plots = len(error_list)
 
     fig_s, ax_s = plt.subplots()
     for k in range(0, num_plots):
         ax_s.plot(SNRdB_range, error_list[k]['SER'], alpha=(0.4+0.6/num_plots*k), label=str(error_list[k]['epoch']))
     ax_s.set_yscale('log')
-    leg_s = ax_s.legend(loc = 'upper right', frameon=True)
+    leg_s = ax_s.legend()
+    ax_s.legend(loc = 'upper right', frameon=True)
     ax_s.set_xlabel('SNR(dB)')
     ax_s.set_ylabel('SER')
     title_s = '{:d}I{:d}O '.format(params['NT'], params['NR']) + params['modulation'] + ' ' 
@@ -82,13 +84,14 @@ def plot_epochs(params, args, SNRdB_range, error_list):
     else:
         path_s = 'SER_upstream{:d}_downstream{:d}.png'
     path_s = os.path.join(args.log_dir, path_s.format(args.upstream, args.downstream))
-    fig_s.savefig(path_s, dpi=fig.dpi)
+    fig_s.savefig(path_s, dpi=fig_s.dpi)
 
     fig_b, ax_b = plt.subplots()
     for k in range(0, num_plots):
         ax_b.plot(SNRdB_range, error_list[k]['BER'], alpha=(0.4+0.6/num_plots*k), label=str(error_list[k]['epoch']))
     ax_b.set_yscale('log')
-    leg_b = ax_b.legend(log='upper right', frameon=True)
+    leg_b = ax_b.legend()
+    ax_b.legend(loc = 'upper right', frameon=True)
     ax_b.set_xlabel('SNR(dB)')
     ax_b.set_ylabel('BER')
     title_b = '{:d}I{:d}O '.format(params['NT'], params['NR']) + params['modulation'] + ' '
@@ -99,7 +102,26 @@ def plot_epochs(params, args, SNRdB_range, error_list):
         path_b = 'BER_upstream{:d}_downstream{:d}_dropout.png'
     else:
         path_b = 'BER_upstream{:d}_downstream{:d}.png'
-    path_b = os.path.join(args.log_dir, path_s.format(args.upstream, args.downstream))
-    fig_s.savefig(path_b, dpi=fig.dpi)
+    path_b = os.path.join(args.log_dir, path_b.format(args.upstream, args.downstream))
+    fig_b.savefig(path_b, dpi=fig_b.dpi)
 
     return path_s, path_b
+
+
+def plot_loss(params, args, iterations, losses):
+    fig, ax = plt.subplots()
+    ax.plot(iterations, losses)
+    ax.set_xlabel('iteration')
+    ax.set_ylabel('loss')
+    title = '{:d}I{:d}O '.format(params['NT'], params['NR']) + params['modulation'] + ' '
+    title += '{:d}layers'.format(args.upstream + args.downstream)
+    ax.set_title(title)
+    plt.grid()
+    if args.dropout:
+        path = 'Loss_upstream{:d}_downstream{:d}_dropout.png'
+    else:
+        path = 'Loss_upstream{:d}_downstream{:d}.png'
+    path = os.path.join(args.log_dir, path.format(args.upstream, args.downstream))
+    fig.savefig(path, dpi=fig.dpi)
+
+    return path
