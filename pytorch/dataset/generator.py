@@ -1,7 +1,7 @@
 import torch
 import numpy as np
-from channel import AWGN
-from mapping import QAM_Mapping
+from dataset.channel import AWGN
+from dataset.mapping import QAM_Mapping
 
 """
 About NT and NR:
@@ -32,11 +32,11 @@ class QAM_Generator(object):
 
 
     def random_indices(self):
-        indices_QAM = torch.randint(0, np.sqrt(self.mod_n), 2*self.NT)
+        indices_QAM = torch.randint(low=0, high=int(np.sqrt(self.mod_n)), size=(2*self.NT, ))
         return indices_QAM
 
     def modulate(self, indices):
-        x = torch.gather(self.constellation, dim=0, indices)
+        x = torch.gather(self.constellation, dim=0, index=indices)
         return x
 
     def map_to_bits(self, indices):

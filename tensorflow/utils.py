@@ -59,6 +59,7 @@ def plot_fig(args, SNRdB, SER_list, save_path):
     ax.scatter(SNRdB, SER_NN, c='r', alpha=0.7, label='Neural Network')
     ax.scatter(SNRdB, SER_ZF, c='b', alpha=0.7, label='Zero Forcing')
     ax.scatter(SNRdB, SER_MMSE, c='g', alpha=0.7, label='MMSE')
+    ax.set_yscale('log')
     leg = ax.legend()
     ax.legend(loc='lower left', frameon=True)
     plt.xlabel('SNR(dB)')

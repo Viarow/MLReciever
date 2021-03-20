@@ -1,7 +1,7 @@
 import torch
 from torch.utils.data import Dataset
 from torchvision import datasets
-from generator import QAM_Generator
+from dataset.generator import QAM_Generator
 
 
 class QAM_Dataset(Dataset):
@@ -22,10 +22,10 @@ class QAM_Dataset(Dataset):
         y, H, noise_sigma = self.generator.pass_channel(x, SNRdB)
         data_blob = {
             'indices': indices,
-            'x': x,
-            'y': y,
-            'H': H,
-            'noise_sigma': noise_sigma,
+            'x': x.type(torch.FloatTensor),
+            'y': y.type(torch.FloatTensor),
+            'H': H.type(torch.FloatTensor),
+            'noise_sigma': noise_sigma.type(torch.FloatTensor),
             'SNRdB': SNRdB
         }
         return data_blob
