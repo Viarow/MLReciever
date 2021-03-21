@@ -1,6 +1,6 @@
 import torch
 import numpy
-from network_utils import batch_matvec_mul
+from network.network_utils import batch_matvec_mul
 
 
 def zero_forcing(y, H):
@@ -11,11 +11,11 @@ def zero_forcing(y, H):
     Outputs:
     x.shape = [batch_size, K] = [batch_size, 2*NT]
     '''
+    # Gramian of transposed channel matrix
+    HtH = torch.matmul(torch.transpose(H, 1, 2), H)
+    
     # Projected channel output
     Hty = batch_matvec_mul(torch.transpose(H, 1, 2), y)
-
-    # Gramian of transposed channel matrix
-    HtH = torch.matmul(H.transpose_(1, 2), H)
 
     # Inverse Gramian
     HtHinv = torch.inverse(HtH)
@@ -35,11 +35,13 @@ def MMSE(y, H, noise_sigma):
     Outputs:
     x.shape = [batch_size, K] = [batch_size, 2*NT]
     '''
+
+    # Gramian of transposed channel matrix
+    HtH = torch.matmul(torch.transpose(H, 1, 2), H)
+    
     # Projected channel output
     Hty = batch_matvec_mul(torch.transpose(H, 1, 2), y)
 
-    # Gramian of transposed channel matrix
-    HtH = torch.matmul(H.transpose_(1, 2), H) 
 
     # Inverse Gramian
     batch_size = H.shape[0]

@@ -3,7 +3,7 @@ from torch.utils.data import Dataset
 from torch.utils.data import DataLoader
 import torch.optim as optim
 import torch.nn as nn
-from dataset.simulated_dataset import QAM_Dataset
+from dataset.simulated_dataset import QAM_Dataset, QAM_Dataset_Constant
 from dataset.mapping import QAM_Mapping
 from network.detector import FullyConnectedNet
 from utils import *
@@ -58,7 +58,7 @@ def test(args, epoch, model, testloader, logger):
     mod_n = int(args.modulation.split('_')[1])
     mapping = QAM_Mapping(args.modulation)
     with torch.no_grad():
-        for data_blob in testloader:
+        for i, data_blob in enumerate(testloader, 0):
             indices = data_blob['indices']
             SNRdB = data_blob['SNRdB']
             if args.cuda:
@@ -115,7 +115,7 @@ def train(args):
         'p': args.dropout_rate
     }
     SNRdB_range_train = np.linspace(args.SNRdB_min, args.SNRdB_max, args.train_size)
-    trainset = QAM_Dataset(params, SNRdB_range_train)
+    trainset = QAM_Dataset_Constant(params, SNRdB_range_train)
     trainloader = DataLoader(trainset, batch_size=args.batch_size, shuffle=True, num_workers=2)
     SNRdB_range_test = np.linspace(args.SNRdB_min, args.SNRdB_max, args.test_size)
     testset = QAM_Dataset(params, SNRdB_range_test)
