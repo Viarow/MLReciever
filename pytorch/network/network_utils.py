@@ -1,5 +1,8 @@
 import torch
 
 def batch_matvec_mul(A, b, transpose_a=False):
-    C = torch.matmul(A.transpose_(1, 2), b.unsqueeze_(dim=2))
-    return C.squeeze_(dim=-1)
+    if transpose_a:
+        C = torch.matmul(torch.transpose(A, 1, 2), torch.unsqueeze(b, dim=2))
+    else:
+        C = torch.matmul(A, torch.unsqueeze(b, dim=2))
+    return torch.squeeze(C, dim=-1)

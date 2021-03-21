@@ -58,7 +58,7 @@ def test(args, epoch, model, testloader, logger):
     mod_n = int(args.modulation.split('_')[1])
     mapping = QAM_Mapping(args.modulation)
     with torch.no_grad():
-        for data_blob in testloader:
+        for i, data_blob in enumerate(testloader, 0):
             indices = data_blob['indices']
             SNRdB = data_blob['SNRdB']
             if args.cuda:

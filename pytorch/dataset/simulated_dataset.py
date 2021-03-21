@@ -29,3 +29,28 @@ class QAM_Dataset(Dataset):
             'SNRdB': SNRdB
         }
         return data_blob
+
+
+class QAM_Dataset_Constant(Dataset):
+    def __init__(self, params, SNRdB_range):
+        self.SNRdB_range = SNRdB_range
+        generator = QAM_Generator(params)
+        self.generator = generator
+        self.indices = generator.random_indices()
+        self.x = generator.modulate(self.indices)
+
+    def __len__(self):
+        return self.SNRdB_range.shape[0]
+
+    def __getitem__(self, idx):
+        SNRdB = self.SNRdB_range[idx]
+        y, H, noise_sigma = self.generator.pass_channel(self.x, SNRdB)
+        data_blob = {
+            'indices': self.indices,
+            'x': self.x.type(torch.FloatTensor),
+            'y': y.type(torch.FloatTensor),
+            'H': H.type(torch.FloatTensor),
+            'noise_sigma': noise_sigma.type(torch.FloatTensor),
+            'SNRdB': SNRdB
+        }
+        return data_blob
