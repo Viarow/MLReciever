@@ -13,7 +13,7 @@ class Layer(nn.Module):
         self.linear_fun = getattr(sys.modules[__name__], linear_name)(params)
         self.denoiser_fun = getattr(sys.modules[__name__], denoiser_name)(params)
         self.linear_fun.reset_parameters()
-        
+        self.use_cuda = params['cuda']
 
     def forward(self, data_blob):
         x = data_blob['x']   #label in batch
@@ -33,6 +33,8 @@ class Layer(nn.Module):
 
         W = linear_helper['W']
         I = torch.eye(2*self.NT).repeat(self.batch_size, 1, 1)
+        if self.use_cuda:
+            I  = I.cuda()
         e10 = batch_matvec_mul(I - torch.matmul(W, features['H']), x-xhat)
         e11 = batch_matvec_mul(W, features['y']-batch_matvec_mul(features['H'], x))
         helper = {'linear': linear_helper, 

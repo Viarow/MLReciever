@@ -13,8 +13,9 @@ class MMNet_linear(nn.Module):
         self.batch_size = params['batch_size']
         Wr = torch.Tensor(1, self.NT//2, self.NR//2)
         Wi = torch.Tensor(1, self.NT//2, self.NR//2)
-        W_cat = torch.cat(torch.cat((Wr, -Wi), dim=2), torch.cat((Wi, Wr), dim=2), dim=1)
+        W_cat = torch.cat((torch.cat((Wr, -Wi), dim=2), torch.cat((Wi, Wr), dim=2)), dim=1)
         self.W = Parameter(W_cat.repeat(self.batch_size, 1, 1))
+        self.use_cuda = params['cuda']
 
     def reset_parameters(self):
         init.normal_(self.W, mean=0., std=0.01)
@@ -22,7 +23,11 @@ class MMNet_linear(nn.Module):
     def forward(self, shatt, rt, features):
         H = features['H']
         zt = shatt + batch_matvec_mul(self.W, rt)
-        helper = {'W':self.W, 'I_WH':torch.eye(self.NT).repeat(self.batch_size, 1, 1)-torch.matmul(self.W, H)}
+        if self.use_cuda:
+            I_WH = torch.eye(self.NT).repeat(self.batch_size, 1, 1).cuda()-torch.matmul(self.W, H)
+        else:
+            I_WH = torch.eye(self.NT).repeat(self.batch_size, 1, 1)-torch.matmul(self.W, H)
+        helper = {'W':self.W, 'I_WH':I_WH}
         return zt, helper
 
 
