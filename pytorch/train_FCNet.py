@@ -115,7 +115,7 @@ def train(args):
         'p': args.dropout_rate
     }
     SNRdB_range_train = np.linspace(args.SNRdB_min, args.SNRdB_max, args.train_size)
-    trainset = QAM_Dataset_Constant(params, SNRdB_range_train)
+    trainset = QAM_Dataset(params, SNRdB_range_train)
     trainloader = DataLoader(trainset, batch_size=args.batch_size, shuffle=True, num_workers=2)
     SNRdB_range_test = np.linspace(args.SNRdB_min, args.SNRdB_max, args.test_size)
     testset = QAM_Dataset(params, SNRdB_range_test)
@@ -186,7 +186,7 @@ def train(args):
     loss_path = plot_loss(params, args, iterations, losses)
     print(loss_path + "saved.")
     logger.info(loss_path + "saved.")
-    ser_path, ber_path = plot_epochs(params, args, SNRdB_range_test, error_list)
+    ser_path, ber_path = plot_epochs_FCNet(params, args, SNRdB_range_test, error_list)
     print(ser_path + " saved.")
     logger.info(ser_path+ " saved.")
     print(ber_path + " saved.")

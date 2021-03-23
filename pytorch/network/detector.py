@@ -5,11 +5,13 @@ from network.layer import Layer
 
 class MMNet(nn.Module):
     def __init__(self, params, linear_name='MMNet_linear', denoiser_name='MMNet_Denoiser', num_layers=10):
+        super(MMNet, self).__init__()
         # params must include: NT, NR, constellation, batch_size
         self.params = params
         self.NT = 2*params['NT']
         self.NR = 2*params['NR']
         self.batch_size = params['batch_size']
+        self.use_cuda = params['cuda']
         
         layer_list = []
         for k in range(1, num_layers+1):
@@ -18,10 +20,16 @@ class MMNet(nn.Module):
         self.layers = nn.Sequential(*layer_list)
 
     def forward(self, x, y, H, noise_sigma):
+        if self.use_cuda:
+            xhat = torch.zeros((self.batch_size, self.NT)).type(torch.FloatTensor).cuda()
+            r = y.type(torch.FloatTensor).cuda()
+        else:
+            xhat = torch.zeros((self.batch_size, self.NT)).type(torch.FloatTensor)
+            r = y.type(torch.FloatTensor)
         input_blob = {
             'x': x,
-            'xhat': torch.zeros((self.batch_size, self.NT)).type(torch.FloatTensor),
-            'r': y.type(torch.FloatTensor),
+            'xhat': xhat,
+            'r': r,
             'y': y,
             'H': H,
             'noise_sigma': noise_sigma,

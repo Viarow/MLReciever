@@ -51,7 +51,7 @@ def test_classic(args):
     }
 
     SNRdB_range = np.linspace(args.SNRdB_min, args.SNRdB_max, args.test_size)
-    testset = QAM_Dataset_Constant(params, SNRdB_range)
+    testset = QAM_Dataset(params, SNRdB_range)
     #testset = QAM_Dataset(params, SNRdB_range)
     testloader = DataLoader(testset, batch_size=1, shuffle=False, num_workers=1)
 
@@ -111,7 +111,7 @@ def test_classic(args):
     ax_s.set_title(title_s)
     plt.grid()
     plt.tight_layout()
-    path_s = os.path.join(args.log_dir, 'SER_constant.png')
+    path_s = os.path.join(args.log_dir, 'SER.png')
     fig_s.savefig(path_s, dpi=fig_s.dpi)
 
     fig_b, ax_b = plt.subplots()
@@ -127,7 +127,7 @@ def test_classic(args):
     ax_b.set_title(title_b)
     plt.grid()
     plt.tight_layout()
-    path_b = os.path.join(args.log_dir, 'BER_constant.png')
+    path_b = os.path.join(args.log_dir, 'BER.png')
     fig_b.savefig(path_b, dpi=fig_b.dpi)
 
     print(path_s + " and " + path_b + " saved.")
