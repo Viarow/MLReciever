@@ -1,6 +1,7 @@
 import torch
 import numpy as np
 import matplotlib.pyplot as plt
+from dataset.mapping import QAM_Mapping
 import os
 
 
@@ -48,12 +49,15 @@ def batch_symbol_acc(x_batch, y_batch):
     return float(acc/batch_size)
 
 
-def batch_bit_acc(x_batch, y_batch):
-    # x_batch: bit sequence x, y_batch: bit_sequence xhat
+def batch_bit_acc(args, x_batch, y_batch):
+    # x_batch: indices x, y_batch: indices xhat
     batch_size = x_batch.shape[0]
+    mapping = QAM_Mapping(args.modulation)
     acc = 0.
     for k in range(0, batch_size):
-        acc += symbol_accuracy(x_batch[k], y_batch[k])
+        x_bitseq = mapping.idx_to_bits(x_batch[k])
+        y_bitseq = mapping.idx_to_bits(y_batch[k])
+        acc += bit_accuracy(x_bitseq, y_bitseq)
 
     return float(acc/batch_size)
 
@@ -108,16 +112,20 @@ def plot_epochs_FCNet(params, args, SNRdB_range, error_list):
     return path_s, path_b
 
 
-def plot_loss(params, args, iterations, losses):
+def plot_loss(params, args, network, iterations, losses):
     fig, ax = plt.subplots()
     ax.plot(iterations, losses)
     ax.set_xlabel('iteration')
     ax.set_ylabel('loss')
     title = '{:d}I{:d}O '.format(params['NT'], params['NR']) + params['modulation'] + ' '
-    title += '{:d}layers'.format(args.num_layers)
+    if network == 'FCNet':
+        title += '{:d}layers'.format(args.upstream + args.downstream)
+        path = os.path.join(args.log_dir, "loss_FCNet_{:d}upstream_{:d}downstream.png".format(args.upstream, args.downstream))
+    elif network == 'MMNet':
+        title += '{:d}layers'.format(args.num_layers)
+        path = os.path.join(args.log_dir, "loss_MMNet_{:d}layers.png".format(args.num_layers))
     ax.set_title(title)
     plt.grid()
-    path = os.path.join(args.log_dir, "loss_MMNet_{:d}layers.png".format(args.num_layers))
     fig.savefig(path, dpi=fig.dpi)
 
     return path
