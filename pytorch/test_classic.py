@@ -13,6 +13,7 @@ import time
 import matplotlib.pyplot as plt
 
 """ Test zero-forcing and minimum mean-sqaured error """
+# TODO: write averaged testset
 
 def parse_args():
     parser = argparse.ArgumentParser()
