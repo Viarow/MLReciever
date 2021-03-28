@@ -32,8 +32,9 @@ def parse_args():
     parser.add_argument('--SNRdB_min', type=float, default=5, help='Minimum SNR expressed in dB')
     parser.add_argument('--SNRdB_max', type=float, default=5, help='Maximum SNR expressed in dB')
     parser.add_argument('--train_size', type=int, default=6400, help='Size of traing dataset')
-    parser.add_argument('--batch_size', type=int, default=64, help='Training batch size')
+    parser.add_argument('--batch_size_train', type=int, default=64, help='Training batch size')
     parser.add_argument('--test_size', type=int, default=20, help="Size of testing dataset")
+    parser.add_argument('--batch_size_test', type=int, default=100, help="Test batch size to compute error.")
     # About Network Architecture
     parser.add_argument('--linear_name', type=str, default='MMNet_linear', help='Type of linear function in each layer')
     parser.add_argument('--denoiser_name', type=str, default='MMNet_Denoiser', help='Type of denoiser function in each layer')
@@ -51,11 +52,11 @@ def parse_args():
 
 
 def test(args, epoch, model, testloader, logger):
+    SNR_list = []
     SER_list = []
     BER_list = []
     # TODO: consider PSK here later
     mod_n = int(args.modulation.split('_')[1])
-    mapping = QAM_Mapping(args.modulation)
     with torch.no_grad():
         for i, data_blob in enumerate(testloader, 0):
             indices = data_blob['indices']
@@ -75,18 +76,17 @@ def test(args, epoch, model, testloader, logger):
 
             xhat, _ = model(x, y, H, noise_sigma)
             indices_hat = QAM_demodulate(xhat, constellation)
+            SNR_list.append(SNRdB[0])
             SER = 1. - batch_symbol_acc(indices, indices_hat)
             SER_list.append(SER)
-            # TODO: Consider when batch size is larger than 1
-            x_bitseq = mapping.idx_to_bits(indices[0])
-            xhat_bitseq = mapping.idx_to_bits(indices_hat[0])
-            BER = 1. - bit_accuracy(x_bitseq, xhat_bitseq)
+            
+            BER = 1. - batch_bit_acc(args, indices, indices_hat)
             BER_list.append(BER)
             info_format = "Epoch: {:d}, SNRdB: {:.2f}, SER: {:.3f}, BER: {:.3f}"
             print(info_format.format((epoch+1), SNRdB[0], SER, BER))
             logger.info(info_format.format((epoch+1), SNRdB[0], SER, BER))
 
-    return np.asarray(SER_list), np.asarray(BER_list)
+    return np.asarray(SNR_list), np.asarray(SER_list), np.asarray(BER_list)
 
 
 def train(args):
@@ -113,17 +113,18 @@ def train(args):
         'NT': args.User,
         'modulation': args.modulation,
         'channel': args.channel,
-        'batch_size': args.batch_size,
+        'batch_size': args.batch_size_train,
         'constellation': constellation,
         'cuda': args.cuda
     }
 
     SNRdB_range_train = np.linspace(args.SNRdB_min, args.SNRdB_max, args.train_size)
     trainset = QAM_Dataset(params, SNRdB_range_train)
-    trainloader = DataLoader(trainset, batch_size=args.batch_size, shuffle=True, num_workers=2)
+    trainloader = DataLoader(trainset, batch_size=args.batch_size_train, shuffle=True, num_workers=2)
     SNRdB_range_test = np.linspace(args.SNRdB_min, args.SNRdB_max, args.test_size)
+    SNRdB_range_test = np.repeat(SNRdB_range_test, args.batch_size_test, axis=0)
     testset = QAM_Dataset(params, SNRdB_range_test)
-    testloader = DataLoader(testset, batch_size=1, shuffle=False, num_workers=1)
+    testloader = DataLoader(testset, batch_size=args.batch_size_test, shuffle=False, num_workers=2)
 
     ReceiverModel = MMNet(params, linear_name = args.linear_name, 
                         denoiser_name=args.denoiser_name, num_layers=args.num_layers)
@@ -165,7 +166,7 @@ def train(args):
             if (i+1) % args.log_every == 0:
                 print('[%d, %5d] loss: %.3f' % (epoch+1, i+1, running_loss/args.log_every))
                 #logger.info('[%d, %5d] loss: %.3f' % (epoch+1, i+1, running_loss/args.log_every))
-                iterations.append(epoch * args.train_size / args.batch_size + i + 1)
+                iterations.append(epoch * args.train_size / args.batch_size_train + i + 1)
                 losses.append(running_loss/args.log_every)
                 #logger.info('[%d, %5d] loss: %.3f SER: %.3f' % (epoch+1, i+1, running_loss/args.log_every, symbol_error_rate/args.log_every))
                 running_loss = 0.0
@@ -174,7 +175,7 @@ def train(args):
         if (epoch+1) % args.test_every == 0:
             print("Testing at epoch %d" % (epoch +1))
             logger.info("Testing at epoch %d" % (epoch +1))
-            SER_array, BER_array = test(args, epoch, ReceiverModel, testloader, logger)
+            SNR_array, SER_array, BER_array = test(args, epoch, ReceiverModel, testloader, logger)
             error_list.append({'epoch': (epoch+1), 'SER': SER_array, 'BER': BER_array})
             ckpt_format = 'MMNet_{:d}layers_epoch{:d}.pth'.format(args.num_layers, (epoch+1))
             ckpt_path = os.path.join(args.log_dir, ckpt_format)
@@ -183,10 +184,10 @@ def train(args):
             logger.info(ckpt_path + " saved.")
 
     # plot and save
-    loss_path = plot_loss(params, args, iterations, losses)
+    loss_path = plot_loss(params, args, 'MMNet', iterations, losses)
     print(loss_path + "saved.")
     logger.info(loss_path + "saved.")
-    ser_path, ber_path = plot_epochs_MMNet(params, args, SNRdB_range_test, error_list)
+    ser_path, ber_path = plot_epochs_MMNet(params, args, SNR_array, error_list)
     print(ser_path + " saved.")
     logger.info(ser_path+ " saved.")
     print(ber_path + " saved.")
