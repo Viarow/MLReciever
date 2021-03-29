@@ -3,7 +3,7 @@ from torch.utils.data import Dataset
 from torch.utils.data import DataLoader
 import torch.optim as optim
 import torch.nn as nn
-from dataset.simulated_dataset import QAM_Dataset, QAM_Dataset_Constant
+from dataset.simulated_dataset import QAM_Dataset
 from dataset.mapping import QAM_Mapping
 from network.detector import FullyConnectedNet
 from utils import *
@@ -124,10 +124,11 @@ def train(args):
     testloader = DataLoader(testset, batch_size=args.batch_size_test, shuffle=False, num_workers=2)
     
     ReceiverModel = FullyConnectedNet(params, layers_dict, args.dropout)
-    if args.checkpoint is not None:
-        ReceiverModel.load_state_dict(torch.load(args.checkpoint))
     if args.cuda:
         ReceiverModel = ReceiverModel.cuda()
+    if args.checkpoint is not None:
+        ReceiverModel.load_state_dict(torch.load(args.checkpoint))
+
     criterion = nn.MSELoss()
     optimizer = optim.Adam(ReceiverModel.parameters(), lr=args.learning_rate)
 

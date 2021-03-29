@@ -2,6 +2,7 @@ import torch
 import numpy as np
 import matplotlib.pyplot as plt
 from dataset.mapping import QAM_Mapping
+import seaborn as sns
 import os
 
 
@@ -169,3 +170,29 @@ def plot_epochs_MMNet(params, args, SNRdB_range, error_list):
     fig_b.savefig(path_b, dpi=fig_b.dpi)
 
     return path_s, path_b
+
+
+def plot_comparison(SNRdB_range, results, y_type, title, path, extra={}):
+    # results: a dictionary of architecture labels and their corresponding SER or BER arrays
+    # type: 'SER' or 'BER'
+    # extra: dictionary for architectures with dropout if there is any
+    arch_keys = list(results.keys())
+    sns.set_style('whitegrid')
+
+    fig, ax = plt.subplots()
+    for key in arch_keys:
+        ax.plot(SNRdB_range, results[key], label=key)
+    # If extra dict is not empty
+    if extra:
+        extra_keys = list(extra.keys())
+        for key in extra_keys:
+            ax.plot(SNRdB_range, extra[key], '--', label=key)
+    
+    ax.set_yscale('log')
+    leg = ax.legend()
+    ax.legend(frameon=True)
+    ax.set_xlabel('SNR(dB)')
+    ax.set_ylabel(y_type)
+    ax.set_title(title)
+    fig.savefig(path, dpi=fig.dpi)
+    print(path + ' saved.')
