@@ -38,3 +38,16 @@ def plot_amp(path):
 #     path = os.path.join(fig_dir, 'display_amp_effects.png')
 #     plot_amp(path)
 #     print(path + " saved.")
+
+
+def WienerHammerstein(y, order, coefficients):
+    '''
+    Generalized Wiener Hammerstein Model
+    order = len(coefficients)
+    TODO: consider time delay
+    '''
+    zt = torch.Tensor([0.]).repeat(y.shape)
+    for k in range(0, order):
+        zt += coefficients[k] * y * torch.pow(torch.sqrt(torch.sum(torch.square(y), dim=0)), k)
+
+    return zt

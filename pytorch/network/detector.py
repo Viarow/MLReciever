@@ -11,6 +11,7 @@ class MMNet(nn.Module):
         self.NT = 2*params['NT']
         self.NR = 2*params['NR']
         self.batch_size = params['batch_size']
+        self.num_layers = num_layers
         self.use_cuda = params['cuda']
         
         layer_list = []
@@ -35,8 +36,17 @@ class MMNet(nn.Module):
             'noise_sigma': noise_sigma,
             'helper': {}
         }
-        pred_blob = self.layers(input_blob)
-        return pred_blob['xhat'], pred_blob['helper']
+
+        #pred_blob = self.layers(input_blob)
+        #return pred_blob['xhat'], pred_blob['helper']
+        xhat_list = []
+        for k in range(0, self.num_layers):
+            pred_blob = self.layers[k](input_blob)
+            xhat_list.append(pred_blob['xhat'])
+            input_blob = pred_blob
+
+        return xhat_list
+        
 
 
 class FullyConnectedNet(nn.Module):
@@ -48,6 +58,7 @@ class FullyConnectedNet(nn.Module):
         super(FullyConnectedNet, self).__init__()
         self.NT = 2*params['NT']
         self.NR = 2*params['NR']
+        self.num_layers = layers_dict['upstream'] + 1 + layers_dict['downstream']
 
         layers_list = []
         if dropout:
@@ -79,5 +90,11 @@ class FullyConnectedNet(nn.Module):
 
     def forward(self, y):
 
-        xhat = self.layers(y)
-        return xhat
+        xhat_list = []
+        for k in range(0, self.num_layers):
+            xhat = self.layers[k](y)
+            xhat_list.append(xhat)
+            y = xhat
+        #xhat = self.layers(y)
+        #return xhat
+        return xhat_list

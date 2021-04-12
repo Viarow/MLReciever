@@ -28,35 +28,35 @@ FCNet_INFO = {
         'upstream': 0,
         'downstream': 0,
         'p': 0.,
-        'checkpoint': 'experiments/10I10O_QAM16_AWGN_LINEAR_FCNet_500epochs/upstream0_downstream0_epoch500.pth'
+        'checkpoint': 'experiments/SISO_QAM16_AWGN_LINEAR_FCNet_500epochs/upstream0_downstream0_epoch500.pth'
     },
     '3layers' : {
         'dropout': False,
         'upstream': 1,
         'downstream': 1,
         'p': 0.,
-        'checkpoint': 'experiments/10I10O_QAM16_AWGN_LINEAR_FCNet_500epochs/upstream1_downstream1_epoch500.pth'
+        'checkpoint': 'experiments/SISO_QAM16_AWGN_LINEAR_FCNet_500epochs/upstream1_downstream1_epoch500.pth'
     },
     '5layers' : {
         'dropout': False,
         'upstream': 2,
         'downstream': 2,
         'p': 0.,
-        'checkpoint': 'experiments/10I10O_QAM16_AWGN_LINEAR_FCNet_500epochs/upstream2_downstream2_epoch500.pth'
+        'checkpoint': 'experiments/SISO_QAM16_AWGN_LINEAR_FCNet_500epochs/upstream2_downstream2_epoch500.pth'
     },
     '10layers' : {
         'dropout': False,
         'upstream': 4,
         'downstream': 5,
         'p': 0.,
-        'checkpoint': 'experiments/10I10O_QAM16_AWGN_LINEAR_FCNet_500epochs/upstream4_downstream5_epoch500.pth'
+        'checkpoint': 'experiments/SISO_QAM16_AWGN_LINEAR_FCNet_500epochs/upstream4_downstream5_epoch500.pth'
     },
     '15layers' : {
         'dropout': False,
         'upstream': 7,
         'downstream': 7,
         'p': 0.,
-        'checkpoint': 'experiments/10I10O_QAM16_AWGN_LINEAR_FCNet_500epochs/upstream7_downstream7_epoch500.pth'
+        'checkpoint': 'experiments/SISO_QAM16_AWGN_LINEAR_FCNet_500epochs/upstream7_downstream7_epoch500.pth'
     }
 }
 
@@ -65,14 +65,14 @@ MIXED_INFO = {
         'linear_name':'MMNet_linear',
         'denoiser_name': 'MMNet_Denoiser',
         'num_layers': 10,
-        'checkpoint': 'experiments/SISO_QAM16_AWGN_LINEAR_MMNet_500epochs/MMNet_10layers_epoch500.pth'
+        'checkpoint': 'experiments_RayleighFading/SISO_QAM16_Rayleigh_LINEAR_MMNet_200epochs/MMNet_10layers_epoch200.pth'
     },
     'FCNet': {
         'dropout': False,
-        'upstream': 0,
-        'downstream': 0,
+        'upstream': 1,
+        'downstream': 1,
         'p': 0.,
-        'checkpoint': 'experiments/SISO_QAM16_AWGN_LINEAR_FCNet_500epochs/upstream0_downstream0_epoch500.pth'
+        'checkpoint': 'experiments_RayleighFading/SISO_QAM16_Rayleigh_LINEAR_FCNet_200epochs/upstream1_downstream1_epoch200.pth'
     }
 }
 
@@ -115,7 +115,8 @@ def test_MMNet(args, network_type, model, testloader):
                 noise_sigma = data_blob['noise_sigma']
                 constellation = get_QAMconstellation(mod_n)
     
-            xhat, _ = model(x, y, H, noise_sigma)
+            xhat_list = model(x, y, H, noise_sigma)
+            xhat = xhat_list[-1]
             indices_hat = QAM_demodulate(xhat, constellation)
             SNR_list.append(SNRdB[0])
             SER = 1. - batch_symbol_acc(indices, indices_hat)
@@ -153,7 +154,8 @@ def test_FCNet(args, network_type, model, testloader):
                 noise_sigma = data_blob['noise_sigma']
                 constellation = get_QAMconstellation(mod_n)
             
-            xhat = model(y)
+            xhat_list = model(y)
+            xhat = xhat_list[-1]
             indices_hat = QAM_demodulate(xhat, constellation)
             SNR_list.append(SNRdB[0])
             SER = 1. - batch_symbol_acc(indices, indices_hat)
@@ -365,17 +367,17 @@ def compare_with_classics(args, fig_dir):
     BER_results.update({'MMSE': BER_array})
 
     # plot figure
-    title = 'NT{:d}_NR{:d}_'.format(params['NT'], params['NR']) + params['modulation']
-    SER_path = os.path.join(fig_dir, 'compare_with_classics_SER_FC1.png')
+    title = 'NT{:d}_NR{:d}_'.format(params['NT'], params['NR']) + params['modulation'] + " Rayleigh Fading"
+    SER_path = os.path.join(fig_dir, 'compare_with_classics_SER.png')
     plot_comparison(SNR_array, SER_results, 'SER', title, SER_path)
-    BER_path = os.path.join(fig_dir, 'compare_with_classics_BER_FC1.png')
+    BER_path = os.path.join(fig_dir, 'compare_with_classics_BER.png')
     plot_comparison(SNR_array, BER_results, 'BER', title, BER_path)
     #print(SER_path + " and " + BER_path + " saved.")
 
 
 if __name__ == '__main__':
     args = parse_args()
-    fig_dir = './experiments/comparison_LDLN_SISO'
-    compare_MMNet(args, fig_dir)
+    fig_dir = './experiments_compare_RayleighFading/comparison_LDLA_SISO'
+    #compare_MMNet(args, fig_dir)
     #compare_FCNet(args, fig_dir)
     compare_with_classics(args, fig_dir)

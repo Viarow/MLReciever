@@ -74,8 +74,9 @@ def plot_epochs_FCNet(params, args, SNRdB_range, error_list):
 
     fig_s, ax_s = plt.subplots()
     for k in range(0, num_plots):
-        ax_s.plot(SNRdB_range, error_list[k]['SER'], alpha=(0.4+0.6/num_plots*k), label=str(error_list[k]['epoch']))
+        ax_s.plot(SNRdB_range, error_list[k]['SER'], label=str(error_list[k]['epoch']), linewidth=3)
     ax_s.set_yscale('log')
+    ax_s.set_ylim(1e-2, 1)
     leg_s = ax_s.legend()
     ax_s.legend(loc = 'upper right', frameon=True)
     ax_s.set_xlabel('SNR(dB)')
@@ -93,8 +94,9 @@ def plot_epochs_FCNet(params, args, SNRdB_range, error_list):
 
     fig_b, ax_b = plt.subplots()
     for k in range(0, num_plots):
-        ax_b.plot(SNRdB_range, error_list[k]['BER'], alpha=(0.4+0.6/num_plots*k), label=str(error_list[k]['epoch']))
+        ax_b.plot(SNRdB_range, error_list[k]['BER'], label=str(error_list[k]['epoch']), linewidth=3)
     ax_b.set_yscale('log')
+    ax_b.set_ylim(1e-2, 1)
     leg_b = ax_b.legend()
     ax_b.legend(loc = 'upper right', frameon=True)
     ax_b.set_xlabel('SNR(dB)')
@@ -139,8 +141,9 @@ def plot_epochs_MMNet(params, args, SNRdB_range, error_list):
 
     fig_s, ax_s = plt.subplots()
     for k in range(0, num_plots):
-        ax_s.plot(SNRdB_range, error_list[k]['SER'], alpha=(0.4+0.6/num_plots*k), label=str(error_list[k]['epoch']))
+        ax_s.plot(SNRdB_range, error_list[k]['SER'], label=str(error_list[k]['epoch']), linewidth=3)
     ax_s.set_yscale('log')
+    ax_s.set_ylim(1e-2, 1)
     leg_s = ax_s.legend()
     ax_s.legend(loc = 'upper right', frameon=True)
     ax_s.set_xlabel('SNR(dB)')
@@ -155,8 +158,9 @@ def plot_epochs_MMNet(params, args, SNRdB_range, error_list):
 
     fig_b, ax_b = plt.subplots()
     for k in range(0, num_plots):
-        ax_b.plot(SNRdB_range, error_list[k]['BER'], alpha=(0.4+0.6/num_plots*k), label=str(error_list[k]['epoch']))
+        ax_b.plot(SNRdB_range, error_list[k]['BER'], label=str(error_list[k]['epoch']), linewidth=3)
     ax_b.set_yscale('log')
+    ax_b.set_ylim(1e-2, 1)
     leg_b = ax_b.legend()
     ax_b.legend(loc = 'upper right', frameon=True)
     ax_b.set_xlabel('SNR(dB)')
@@ -189,6 +193,7 @@ def plot_comparison(SNRdB_range, results, y_type, title, path, extra={}):
             ax.plot(SNRdB_range, extra[key], '--', label=key)
     
     ax.set_yscale('log')
+    ax.set_ylim(0.1, 10)
     leg = ax.legend()
     ax.legend(frameon=True)
     ax.set_xlabel('SNR(dB)')

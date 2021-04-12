@@ -1,7 +1,7 @@
 import torch
 import numpy as np
-from dataset.channel import AWGN
-from dataset.amplifier import HighPowerAmplifier
+from dataset.channel import *
+from dataset.amplifier import HighPowerAmplifier, WienerHammerstein
 from dataset.mapping import QAM_Mapping
 
 """
@@ -46,9 +46,14 @@ class QAM_Generator(object):
 
     def pass_channel(self, x, SNRdB):
         # TODO: needs channel selection here
-        y, H, noise_sigma = AWGN(x, SNRdB)
+        if self.channel_type == 'AWGN':
+            y, H, noise_sigma, actual_SNRdB = AWGN(x, SNRdB)
+        elif self.channel_type == 'RayleighFading':
+            y, H, noise_sigma, actual_SNRdB = RayleighFading(x, SNRdB, 0.5, 0.5, self.NR, self.NT)
+        elif self.channel_type == 'RicianFading':
+            y, H, noise_sigma, actual_SNRdB = RicianFading(x, SNRdB, 1., 0.5, 1., 0.5, self.NR, self.NT)
         #noise_sigma = torch.pow(torch.Tensor([10.]), (10.*np.log10(self.NT) - SNRdB-10.*np.log10(self.NR))/20.)
-        return y, H, noise_sigma
+        return y, H, noise_sigma, actual_SNRdB
 
 
 class QAM_Generator_Nonlinear(object):
@@ -85,16 +90,21 @@ class QAM_Generator_Nonlinear(object):
         bit_seq = self.mapping.idx_to_bits(indices)
         return bit_seq
 
-    def pass_amplifier(self, x, satlevel):
+    def pass_amplifier(self, x, order, coefficients):
         # TODO: needs amplidier selection here
         if self.amplifier == 'None':
             x_amp = x
-        else:
-            x_amp = HighPowerAmplifier(x, satlevel)
+        elif self.amplifier == 'WienerHammerstein':
+            x_amp = WienerHammerstein(x, order, coefficients)
         return x_amp
 
     def pass_channel(self, x, SNRdB):
         # TODO: needs channel selection here
-        y, H, noise_sigma = AWGN(x, SNRdB)
+        if self.channel_type == 'AWGN':
+            y, H, noise_sigma, actual_SNRdB = AWGN(x, SNRdB)
+        elif self.channel_type == 'RayleighFading':
+            y, H, noise_sigma, actual_SNRdB = RayleighFading(x, SNRdB, 0.5, 0.5, self.NR, self.NT)
+        elif self.channel_type == 'RicianFading':
+            y, H, noise_sigma, actual_SNRdB = RicianFading(x, SNRdB, 1., 0.5, 1., 0.5, self.NR, self.NT)
         #noise_sigma = torch.pow(torch.Tensor([10.]), (10.*np.log10(self.NT) - SNRdB-10.*np.log10(self.NR))/20.)
-        return y, H, noise_sigma
+        return y, H, noise_sigma, actual_SNRdB

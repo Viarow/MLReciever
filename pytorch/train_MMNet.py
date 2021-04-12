@@ -74,17 +74,19 @@ def test(args, epoch, model, testloader, logger):
                 noise_sigma = data_blob['noise_sigma']
                 constellation = get_QAMconstellation(mod_n)
 
-            xhat, _ = model(x, y, H, noise_sigma)
+            xhat_list = model(x, y, H, noise_sigma)
+            xhat = xhat_list[-1]
             indices_hat = QAM_demodulate(xhat, constellation)
-            SNR_list.append(SNRdB[0])
+            avg_SNRdB = torch.mean(SNRdB).item()
+            SNR_list.append(avg_SNRdB)
             SER = 1. - batch_symbol_acc(indices, indices_hat)
             SER_list.append(SER)
             
             BER = 1. - batch_bit_acc(args, indices, indices_hat)
             BER_list.append(BER)
             info_format = "Epoch: {:d}, SNRdB: {:.2f}, SER: {:.3f}, BER: {:.3f}"
-            print(info_format.format((epoch+1), SNRdB[0], SER, BER))
-            logger.info(info_format.format((epoch+1), SNRdB[0], SER, BER))
+            print(info_format.format((epoch+1), avg_SNRdB, SER, BER))
+            logger.info(info_format.format((epoch+1), avg_SNRdB, SER, BER))
 
     return np.asarray(SNR_list), np.asarray(SER_list), np.asarray(BER_list)
 
@@ -157,7 +159,9 @@ def train(args):
                 noise_sigma = data_blob['noise_sigma']
 
             optimizer.zero_grad()
-            xhat, _ = ReceiverModel(x, y, H, noise_sigma)
+            xhat_list = ReceiverModel(x, y, H, noise_sigma)
+            xhat = xhat_list[-1]
+            loss = sum([criterion(xhat_list[k], x) for k in range(0, args.num_layers)])
             loss = criterion(xhat, x)
             loss.backward()
             optimizer.step()
