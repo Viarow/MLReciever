@@ -24,7 +24,6 @@ class Layer(nn.Module):
             'H': data_blob['H'],
             'noise_sigma': data_blob['noise_sigma']
         }                           #contains y, H, noise_sigma
-
         z, linear_helper = self.linear_fun(xhat, r, features)
         #features['onsager'] = onsager
         new_xhat, denoiser_helper = self.denoiser_fun(z, xhat, r, features, linear_helper)

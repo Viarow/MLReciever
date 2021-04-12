@@ -35,18 +35,18 @@ MIXED_INFO = {
         'linear_name':'MMNet_linear',
         'denoiser_name': 'MMNet_Denoiser',
         'num_layers': 10,
-        'checkpoint': 'experiments/SISO_QAM16_AWGN_LINEAR_MMNet_500epochs/MMNet_10layers_epoch500.pth'
+        'checkpoint': 'experiments_AWGN/10I10O_QAM16_AWGN_LINEAR_MMNet_500epochs/MMNet_10layers_epoch500.pth'
     },
     'FCNet': {
         'dropout': False,
         'upstream': 0,
         'downstream': 0,
         'p': 0.,
-        'checkpoint': 'experiments/SISO_QAM16_AWGN_LINEAR_FCNet_500epochs/upstream0_downstream0_epoch500.pth'
+        'checkpoint': 'experiments_AWGN/10I10O_QAM16_AWGN_LINEAR_FCNet_500epochs/upstream0_downstream0_epoch500.pth'
     }
 }
 
-def display_amp_effects(args, satlevels, path):
+def display_amp_effects(args, path):
 
     params = {
         'NR': args.BaseStation * args.Antenna,
@@ -73,19 +73,20 @@ def display_amp_effects(args, satlevels, path):
 
     SNR_array = np.asarray(SNR_list)
     power_dict = {'no amplifier': np.asarray(power_linear)}
-    params.update({'amplifier': args.amplifier})
-    params.update({'satlevel': args.satlevel})
+    params.update({'amplifier': args.amplifier, 'order':1, 'coefficients': [1.0]})
 
-    for level in satlevels:
-        params['satlevel'] = level
+    for order in range(1, 5):
+        params['order'] = order
+        if order > 1:
+            params['coefficients'].append(1.0/(2**(order+2)))
         testset_nonlinear = QAM_Dataset_Nonlinear(params, SNRdB_range_test)
         testloader_nonlinear = DataLoader(testset_nonlinear, batch_size=args.batch_size_test, shuffle=False, num_workers=2)
         power_nonlinear = []
         for i, data_blob in enumerate(testloader_nonlinear, 0):
             y = data_blob['y']
-            batch_power = torch.mean(torch.pow(y, 2), dim=1)
+            batch_power = torch.mean(torch.square(y), dim=1)
             power_nonlinear.append(torch.mean(batch_power, dim=0).squeeze().item())
-        power_dict.update({'satlevel={:.1f}'.format(level) : np.asarray(power_nonlinear)})
+        power_dict.update({'order={:d}'.format(order) : np.asarray(power_nonlinear)})
 
     title = 'NT{:d}_NR{:d}_'.format(params['NT'], params['NR']) + params['modulation']
     plot_comparison(SNR_array, power_dict, 'averaged power', title, path)
@@ -112,8 +113,9 @@ def test_MMNet(args, network_type, model, testloader):
                 H = data_blob['H']
                 noise_sigma = data_blob['noise_sigma']
                 constellation = get_QAMconstellation(mod_n)
-    
-            xhat, _ = model(x, y, H, noise_sigma)
+
+            xhat_list = model(x, y, H, noise_sigma)
+            xhat = xhat_list[-1]
             indices_hat = QAM_demodulate(xhat, constellation)
             SNR_list.append(SNRdB[0])
             SER = 1. - batch_symbol_acc(indices, indices_hat)
@@ -151,7 +153,8 @@ def test_FCNet(args, network_type, model, testloader):
                 noise_sigma = data_blob['noise_sigma']
                 constellation = get_QAMconstellation(mod_n)
             
-            xhat = model(y)
+            xhat_list = model(y)
+            xhat = xhat_list[-1]
             indices_hat = QAM_demodulate(xhat, constellation)
             SNR_list.append(SNRdB[0])
             SER = 1. - batch_symbol_acc(indices, indices_hat)
@@ -315,11 +318,18 @@ def compare_with_classics(args, fig_dir):
         'modulation': args.modulation,
         'channel': args.channel,
         'amplifier': args.amplifier,
-        'satlevel': args.satlevel,
+        'order': 4,
+        'coefficients': [1.0],
         'batch_size': args.batch_size_test,
         'constellation': constellation,
         'cuda': args.cuda
     }
+
+    for order in range(1, 5):
+        params['order'] = order
+        if order > 1:
+            params['coefficients'].append(1.0/(2**(order+2)))
+
 
     SER_results = {}
     BER_results = {}
@@ -409,8 +419,6 @@ def compare_with_classics(args, fig_dir):
 
 if __name__ == '__main__':
     args = parse_args()
-    fig_dir = './experiments/comparison_NDLA_SISO'
-    satlevels = [0, 2.0, 5.0, 10.0]
-    compare_MMNet(args, satlevels, fig_dir)
-    compare_FCNet(args, satlevels, fig_dir)
+    fig_dir = './experiments_compare/comparison_NDLA_MIMO'
     compare_with_classics(args, fig_dir)
+    #display_amp_effects(args, fig_dir)

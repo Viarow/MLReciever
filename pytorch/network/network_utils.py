@@ -12,3 +12,4 @@ def batch_matvec_mul(A, b, transpose_a=False):
 def batch_mat_trace(A):
     batch_trace = torch.sum(torch.diagonal(A, offset=0, dim1=-1, dim2=-2), dim=-1)
     return batch_trace
+

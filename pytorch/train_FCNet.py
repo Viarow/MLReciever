@@ -62,6 +62,7 @@ def test(args, epoch, model, testloader, logger):
     with torch.no_grad():
         for i, data_blob in enumerate(testloader, 0):
             indices = data_blob['indices']
+            # Actual SNRdB
             SNRdB = data_blob['SNRdB']
             if args.cuda:
                 x = data_blob['x'].cuda()
@@ -76,17 +77,20 @@ def test(args, epoch, model, testloader, logger):
                 noise_sigma = data_blob['noise_sigma']
                 constellation = get_QAMconstellation(mod_n)
             
-            xhat = model(y)
+            #xhat = model(y)
+            xhat_list = model(y)
+            xhat = xhat_list[-1]
             indices_hat = QAM_demodulate(xhat, constellation)
-            SNR_list.append(SNRdB[0])
+            avg_SNRdB = torch.mean(SNRdB).item()
+            SNR_list.append(avg_SNRdB)
             SER = 1. - batch_symbol_acc(indices, indices_hat)
             SER_list.append(SER)
             
             BER = 1. - batch_bit_acc(args, indices, indices_hat)
             BER_list.append(BER)
             info_format = "Epoch: {:d}, SNRdB: {:.2f}, SER: {:.3f}, BER: {:.3f}"
-            print(info_format.format((epoch+1), SNRdB[0], SER, BER))
-            logger.info(info_format.format((epoch+1), SNRdB[0], SER, BER))
+            print(info_format.format((epoch+1), avg_SNRdB, SER, BER))
+            logger.info(info_format.format((epoch+1), avg_SNRdB, SER, BER))
     
     return np.asarray(SNR_list), np.asarray(SER_list), np.asarray(BER_list)
 
@@ -115,6 +119,7 @@ def train(args):
         'downstream': args.downstream,
         'p': args.dropout_rate
     }
+    num_layers = layers_dict['upstream'] + 1 + layers_dict['downstream']
     SNRdB_range_train = np.linspace(args.SNRdB_min, args.SNRdB_max, args.train_size)
     trainset = QAM_Dataset(params, SNRdB_range_train)
     trainloader = DataLoader(trainset, batch_size=args.batch_size_train, shuffle=True, num_workers=2)
@@ -154,7 +159,9 @@ def train(args):
                 noise_sigma = data_blob['noise_sigma']
 
             optimizer.zero_grad()
-            xhat = ReceiverModel(y)
+            #xhat = ReceiverModel(y)
+            xhat_list = ReceiverModel(y)
+            xhat = xhat_list[-1]
             loss = criterion(xhat, x)
             loss.backward()
             optimizer.step()
