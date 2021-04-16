@@ -49,7 +49,6 @@ class QAM_Dataset_Nonlinear(Dataset):
         indices = self.generator.random_indices()
         x = self.generator.modulate(indices)
         #bit_seq = self.generator.map_to_bits(indices)
-        x_amp = self.generator.pass_amplifier(x, self.order, self.coefficients)
         y, H, noise_sigma, actual_SNRdB = self.generator.pass_channel(x, SNRdB)
         y = self.generator.pass_amplifier(y, self.order, self.coefficients)
         data_blob = {
