@@ -95,7 +95,12 @@ class QAM_Generator_Nonlinear(object):
         if self.amplifier == 'None':
             x_amp = x
         elif self.amplifier == 'WienerHammerstein':
-            x_amp = WienerHammerstein(x, order, coefficients)
+            length = x.shape[0]
+            real = x.unsqueeze(-1)[0:(length//2)]
+            imag = x.unsqueeze(-1)[(length//2):length]
+            x_complex = torch.view_as_complex(torch.cat((real, imag), dim=1))
+            x_amp_complex = WienerHammerstein(x_complex, order, coefficients)
+            x_amp = torch.cat((x_amp_complex.real, x_amp_complex.imag), dim=0)
         return x_amp
 
     def pass_channel(self, x, SNRdB):

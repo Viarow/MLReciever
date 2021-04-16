@@ -3,7 +3,7 @@ from torch.utils.data import Dataset
 from torch.utils.data import DataLoader
 import torch.optim as optim
 import torch.nn as nn
-from dataset.simulated_dataset import QAM_Dataset
+from dataset.simulated_dataset import QAM_Dataset, QAM_Dataset_Nonlinear
 from dataset.mapping import QAM_Mapping
 from network.detector import FullyConnectedNet
 from utils import *
@@ -29,6 +29,7 @@ def parse_args():
     parser.add_argument('--User', type=int, default=1, help='Number of transmitting users')
     parser.add_argument('--modulation', type=str, default='QAM_16', help='Modulation scheme')
     parser.add_argument('--channel', type=str, default='AWGN', help='Channel Type')
+    parser.add_argument('--amplifier', type=str, default='WienerHammerstein', help='Amplifier type')
     parser.add_argument('--SNRdB_min', type=float, default=5, help='Minimum SNR expressed in dB')
     parser.add_argument('--SNRdB_max', type=float, default=5, help='Maximum SNR expressed in dB')
     parser.add_argument('--train_size', type=int, default=6400, help='Size of traing dataset')
@@ -120,12 +121,21 @@ def train(args):
         'p': args.dropout_rate
     }
     num_layers = layers_dict['upstream'] + 1 + layers_dict['downstream']
+
     SNRdB_range_train = np.linspace(args.SNRdB_min, args.SNRdB_max, args.train_size)
-    trainset = QAM_Dataset(params, SNRdB_range_train)
+    # trainset = QAM_Dataset(params, SNRdB_range_train)
+    # trainloader = DataLoader(trainset, batch_size=args.batch_size_train, shuffle=True, num_workers=2)
+    # SNRdB_range_test = np.linspace(args.SNRdB_min, args.SNRdB_max, args.test_size)
+    # SNRdB_range_test = np.repeat(SNRdB_range_test, args.batch_size_test, axis=0)
+    # testset = QAM_Dataset(params, SNRdB_range_test)
+    # testloader = DataLoader(testset, batch_size=args.batch_size_test, shuffle=False, num_workers=2)
+
+    params.update({'amplifier':args.amplifier, 'order':2, 'coefficients': [1.0, -0.01]})
+    trainset = QAM_Dataset_Nonlinear(params, SNRdB_range_train)
     trainloader = DataLoader(trainset, batch_size=args.batch_size_train, shuffle=True, num_workers=2)
     SNRdB_range_test = np.linspace(args.SNRdB_min, args.SNRdB_max, args.test_size)
     SNRdB_range_test = np.repeat(SNRdB_range_test, args.batch_size_test, axis=0)
-    testset = QAM_Dataset(params, SNRdB_range_test)
+    testset = QAM_Dataset_Nonlinear(params, SNRdB_range_test)
     testloader = DataLoader(testset, batch_size=args.batch_size_test, shuffle=False, num_workers=2)
     
     ReceiverModel = FullyConnectedNet(params, layers_dict, args.dropout)
