@@ -7,8 +7,11 @@ from network.detector import FullyConnectedNet, MMNet
 from network.classics import zero_forcing, MMSE
 from utils import *
 import numpy as np
+import matplotlib.pyplot as plt
+import seaborn as sns
 import argparse
 import os
+
 
 
 def parse_args():
@@ -160,9 +163,44 @@ def test_one_modulation(model, testloader_linear, testloader_nonlinear, info):
     ReceiverModel.load_state_dict(torch.load(info['linear']))
     print(info['linear'] + " loaded.")
     SNR_array, SER_array, BER_array = test_MMNet(args, 'MMNet', ReceiverModel, testloader_linear)
-    SER_results.update({'LNLD': SER_array})
-    BER_results.update({'LNLD': BER_array})
+    SER_results.update({'LMLD': SER_array})
+    BER_results.update({'LMLD': BER_array})
 
+    # model trained on linear data --> test on non-linear data
+    SNR_array, SER_array, BER_array = test_MMNet(args, 'MMNet', ReceiverModel, testloader_nonlinear)
+    SER_results.update({'LMND': SER_array})
+    BER_results.update({'LMND': BER_array})
+
+    # model trained on non-linear data --> test on non-linear data
+    ReceiverModel.load_state_dict(torch.load(info['nonlinear']))
+    print('linear'] + " loaded.")
+    SNR_array, SER_array, BER_array = test_MMNet(args, 'MMNet', ReceiverModel, testloader_nonlinear)
+    SER_results.update({'NMND': SER_array})
+    BER_results.update({'NMND': BER_array})
+
+    return SNR_array, SER_results, BER_results
+
+
+def plot_subplots(SNRdB_range, record, ylabel, path):
+    sns.set_style('whitegrid')
+    modulation = ['QAM_16', 'QAM_64', 'QAM_64']
+    counter = 0
+    fig, axs = plt.subplots(nrows=1, ncols=3, constrained_layout=True)
+    for ax in axs.flat:
+        ax.set_title(modulation[counter])
+        results = record[modulation[counter]]
+        ax.plot(SNRdB_range, results['LMLD'], linewidth=2, label='train with linearity')
+        ax.plot(SNRdB_range, results['NMLD'], linewidth=2, label='test with non-linearity')
+        ax.plot(SNRdB_range, results['NMND'], linewidth=2, label='re-train with non-linearity')
+        ax.set_yscale('log')
+        ax.set_ylim(1, 1e-4)
+        ax.set_xlabel('SNR(dB)')
+        ax.set_ylabel(ylabel)
+
+    handles, labels = ax.get_legend_handles_labels()
+    fig.legend(handles, labels, loc='lower center', ncol=3)
+    fig.savefig(path, dpi=fig.dpi)
+    print(path + ' saved.')
 
 
 def compare_MMNet_QAM(args, fig_dir):
@@ -196,3 +234,27 @@ def compare_MMNet_QAM(args, fig_dir):
     params.update({'amplifier':args.amplifier, 'order':2, 'coefficients': [1.0, -0.01]})
     testset_nonlinear = QAM_Dataset_Nonlinear(params, SNRdB_range_test)
     testloader_nonlinear = DataLoader(testset_nonlinear, batch_size=args.batch_size_test, shuffle=False, num_workers=2)
+
+    SER_record = {}
+    BER_record = {}
+    
+    # QAM_16
+    SNR_array, SER_results, BER_results = test_one_modulation(ReceiverModel, testloader_linear, testloader_nonlinear, MMNet_INFO['QAM_16'])
+    SER_record.update({'QAM_16': SER_results})
+    BER_record.update({'QAM_16': BER_results})
+
+    # QAM_64
+    SNR_array, SER_results, BER_results = test_one_modulation(ReceiverModel, testloader_linear, testloader_nonlinear, MMNet_INFO['QAM_64'])
+    SER_record.update({'QAM_64': SER_results})
+    BER_record.update({'QAM_64': BER_results})
+
+    # QAM_256
+    SNR_array, SER_results, BER_results = test_one_modulation(ReceiverModel, testloader_linear, testloader_nonlinear, MMNet_INFO['QAM_256'])
+    SER_record.update({'QAM_256': SER_results})
+    BER_record.update({'QAM_256': BER_results})
+
+    path = os.path.join(fig_dir, 'MMNet_QAM16_64_256_SER.png')
+    plot_subplots(SNR_array, SER_record, 'SER', path)
+    
+    path = os.path.join(fig_dir, 'MMNet_QAM16_64_256_BER.png')
+    plot_subplots(SNR_array, BER_record, 'BER', path)
