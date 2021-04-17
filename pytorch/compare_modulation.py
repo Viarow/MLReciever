@@ -13,7 +13,7 @@ import argparse
 import os
 
 
-# TODO: train MMNet with batch_size = 1240
+# TODO: train MMNet with batch_size of 1240
 
 def parse_args():
     # shared arguments
