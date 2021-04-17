@@ -129,7 +129,7 @@ def train(args):
     # testset = QAM_Dataset(params, SNRdB_range_test)
     # testloader = DataLoader(testset, batch_size=args.batch_size_test, shuffle=False, num_workers=2)
 
-    params.update({'amplifier':args.amplifier, 'order':2, 'coefficients': [1.0, -0.01]})
+    params.update({'amplifier':args.amplifier, 'order':2, 'coefficients': [1.0, -0.1]})
     trainset = QAM_Dataset_Nonlinear(params, SNRdB_range_train)
     trainloader = DataLoader(trainset, batch_size=args.batch_size_train, shuffle=True, num_workers=2)
     SNRdB_range_test = np.linspace(args.SNRdB_min, args.SNRdB_max, args.test_size)
