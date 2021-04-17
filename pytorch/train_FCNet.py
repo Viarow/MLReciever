@@ -123,20 +123,20 @@ def train(args):
     num_layers = layers_dict['upstream'] + 1 + layers_dict['downstream']
 
     SNRdB_range_train = np.linspace(args.SNRdB_min, args.SNRdB_max, args.train_size)
-    # trainset = QAM_Dataset(params, SNRdB_range_train)
-    # trainloader = DataLoader(trainset, batch_size=args.batch_size_train, shuffle=True, num_workers=2)
-    # SNRdB_range_test = np.linspace(args.SNRdB_min, args.SNRdB_max, args.test_size)
-    # SNRdB_range_test = np.repeat(SNRdB_range_test, args.batch_size_test, axis=0)
-    # testset = QAM_Dataset(params, SNRdB_range_test)
-    # testloader = DataLoader(testset, batch_size=args.batch_size_test, shuffle=False, num_workers=2)
-
-    params.update({'amplifier':args.amplifier, 'order':2, 'coefficients': [1.0, -0.1]})
-    trainset = QAM_Dataset_Nonlinear(params, SNRdB_range_train)
+    trainset = QAM_Dataset(params, SNRdB_range_train)
     trainloader = DataLoader(trainset, batch_size=args.batch_size_train, shuffle=True, num_workers=2)
     SNRdB_range_test = np.linspace(args.SNRdB_min, args.SNRdB_max, args.test_size)
     SNRdB_range_test = np.repeat(SNRdB_range_test, args.batch_size_test, axis=0)
-    testset = QAM_Dataset_Nonlinear(params, SNRdB_range_test)
+    testset = QAM_Dataset(params, SNRdB_range_test)
     testloader = DataLoader(testset, batch_size=args.batch_size_test, shuffle=False, num_workers=2)
+
+    # params.update({'amplifier':args.amplifier, 'order':2, 'coefficients': [1.0, -0.1]})
+    # trainset = QAM_Dataset_Nonlinear(params, SNRdB_range_train)
+    # trainloader = DataLoader(trainset, batch_size=args.batch_size_train, shuffle=True, num_workers=2)
+    # SNRdB_range_test = np.linspace(args.SNRdB_min, args.SNRdB_max, args.test_size)
+    # SNRdB_range_test = np.repeat(SNRdB_range_test, args.batch_size_test, axis=0)
+    # testset = QAM_Dataset_Nonlinear(params, SNRdB_range_test)
+    # testloader = DataLoader(testset, batch_size=args.batch_size_test, shuffle=False, num_workers=2)
     
     ReceiverModel = FullyConnectedNet(params, layers_dict, args.dropout)
     if args.cuda:
