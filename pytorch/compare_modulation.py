@@ -13,6 +13,7 @@ import argparse
 import os
 
 
+# TODO: train MMNet with batch_size of 1240
 
 def parse_args():
     # shared arguments
@@ -38,16 +39,16 @@ MMNet_INFO = {
     'denoiser_name': 'MMNet_Denoiser',
     'num_layers': 10,
     'QAM_16':{
-        'ckpt_linear': 'experiments_AWGN_order2_sharp/SISO_QAM16_AWGN_LINEAR_MMNet_500epochs/MMNet_10layers_epoch500.pth',
-        'ckpt_nonlinear': 'experiments_AWGN_order2_sharp/SISO_QAM16_AWGN_NONLINEAR_MMNet_500epochs/MMNet_10layers_epoch500.pth'
+        'ckpt_linear': 'experiments_AWGN_order2_mild/SISO_QAM16_AWGN_LINEAR_MMNet_500epochs/MMNet_10layers_epoch500.pth',
+        'ckpt_nonlinear': 'experiments_AWGN_order2_mild/SISO_QAM16_AWGN_NONLINEAR_MMNet_500epochs/MMNet_10layers_epoch500.pth'
     },
     'QAM_64':{
-        'ckpt_linear': 'experiments_AWGN_order2_sharp/SISO_QAM64_AWGN_LINEAR_MMNet_500epochs/MMNet_10layers_epoch500.pth',
-        'ckpt_nonlinear': 'experiments_AWGN_order2_sharp/SISO_QAM64_AWGN_NONLINEAR_MMNet_500epochs/MMNet_10layers_epoch500.pth'
+        'ckpt_linear': 'experiments_AWGN_order2_mild/SISO_QAM64_AWGN_LINEAR_MMNet_500epochs/MMNet_10layers_epoch500.pth',
+        'ckpt_nonlinear': 'experiments_AWGN_order2_mild/SISO_QAM64_AWGN_NONLINEAR_MMNet_500epochs/MMNet_10layers_epoch500.pth'
     },
     'QAM_256':{
-        'ckpt_linear': 'experiments_AWGN_order2_sharp/SISO_QAM256_AWGN_LINEAR_MMNet_500epochs/MMNet_10layers_epoch500.pth',
-        'ckpt_nonlinear': 'experiments_AWGN_order2_sharp/SISO_QAM256_AWGN_NONLINEAR_MMNet_500epochs/MMNet_10layers_epoch500.pth'
+        'ckpt_linear': 'experiments_AWGN_order2_mild/SISO_QAM256_AWGN_LINEAR_MMNet_500epochs/MMNet_10layers_epoch500.pth',
+        'ckpt_nonlinear': 'experiments_AWGN_order2_mild/SISO_QAM256_AWGN_NONLINEAR_MMNet_500epochs/MMNet_10layers_epoch500.pth'
     }
 }
 
@@ -58,16 +59,16 @@ FCNet_INFO = {
     'downstream': 1,
     'p': 0.,
     'QAM_16': {
-        'ckpt_linear': 'experiments_AWGN_order2_sharp/SISO_QAM16_AWGN_LINEAR_FCNet_500epochs/upstream1_downstream1_epoch500.pth',
-        'ckpt_nonlinear': 'experiments_AWGN_order2_sharp/SISO_QAM16_AWGN_NONLINEAR_FCNet_500epochs/upstream1_downstream1_epoch500.pth'
+        'ckpt_linear': 'experiments_AWGN_order2_mild/SISO_QAM16_AWGN_LINEAR_FCNet_500epochs/upstream1_downstream1_epoch500.pth',
+        'ckpt_nonlinear': 'experiments_AWGN_order2_mild/SISO_QAM16_AWGN_NONLINEAR_FCNet_500epochs/upstream1_downstream1_epoch500.pth'
     },
     'QAM_64': {
-        'ckpt_linear': 'experiments_AWGN_order2_sharp/SISO_QAM64_AWGN_LINEAR_FCNet_500epochs/upstream1_downstream1_epoch500.pth',
-        'ckpt_nonlinear': 'experiments_AWGN_order2_sharp/SISO_QAM64_AWGN_NONLINEAR_FCNet_500epochs/upstream1_downstream1_epoch500.pth'
+        'ckpt_linear': 'experiments_AWGN_order2_mild/SISO_QAM64_AWGN_LINEAR_FCNet_500epochs/upstream1_downstream1_epoch500.pth',
+        'ckpt_nonlinear': 'experiments_AWGN_order2_mild/SISO_QAM64_AWGN_NONLINEAR_FCNet_500epochs/upstream1_downstream1_epoch500.pth'
     },
     'QAM_256': {
-        'ckpt_linear': 'experiments_AWGN_order2_sharp/SISO_QAM256_AWGN_LINEAR_FCNet_500epochs/upstream1_downstream1_epoch500.pth',
-        'ckpt_nonlinear': 'experiments_AWGN_order2_sharp/SISO_QAM256_AWGN_NONLINEAR_FCNet_500epochs/upstream1_downstream1_epoch500.pth'
+        'ckpt_linear': 'experiments_AWGN_order2_mild/SISO_QAM256_AWGN_LINEAR_FCNet_500epochs/upstream1_downstream1_epoch500.pth',
+        'ckpt_nonlinear': 'experiments_AWGN_order2_mild/SISO_QAM256_AWGN_NONLINEAR_FCNet_500epochs/upstream1_downstream1_epoch500.pth'
     }
 }
 
@@ -400,4 +401,4 @@ def compare_FCNet_QAM(args, fig_dir):
 if __name__ == '__main__':
     args = parse_args()
     compare_MMNet_QAM(args, args.fig_dir)
-    compare_FCNet_QAM(args, args.fig_dir)
+    #compare_FCNet_QAM(args, args.fig_dir)
