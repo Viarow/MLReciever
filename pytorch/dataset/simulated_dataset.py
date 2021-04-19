@@ -5,18 +5,20 @@ from dataset.generator import QAM_Generator, QAM_Generator_Nonlinear
 
 
 class QAM_Dataset(Dataset):
-    def __init__(self, params, SNRdB_range):
+    def __init__(self, params, train_size, SNRdB_range):
         # params must include NT, NR, modulation (QAM_4, QAM_16, QAM64), channel_type
         # SNRdB_range could a numpy array derived from linspace
         self.generator = QAM_Generator(params)
         self.SNRdB_range = SNRdB_range
+        mod_n = int(params['modulation'].split('_')[1])
+        self.indices_list = self.generator.balanced_indices(repeat=(train_size//mod_n))
 
     def __len__(self):
         return self.SNRdB_range.shape[0]
 
     def __getitem__(self, idx):
         SNRdB = self.SNRdB_range[idx]
-        indices = self.generator.random_indices()
+        indices = self.indices_list[idx]
         x = self.generator.modulate(indices)
         #bit_seq = self.generator.map_to_bits(indices)
         y, H, noise_sigma, actual_SNRdB = self.generator.pass_channel(x, SNRdB)
@@ -33,11 +35,13 @@ class QAM_Dataset(Dataset):
 
 
 class QAM_Dataset_Nonlinear(Dataset):
-    def __init__(self, params, SNRdB_range):
+    def __init__(self, params, train_size, SNRdB_range):
         # params must include NT, NR, modulation (QAM_4, QAM_16, QAM64), channel_type
         # SNRdB_range could a numpy array derived from linspace
         self.generator = QAM_Generator_Nonlinear(params)
         self.SNRdB_range = SNRdB_range
+        mod_n = int(params['modulation'].split('_')[1])
+        self.indices_list = self.generator.balanced_indices(repeat=(train_size//mod_n))
         self.order = params['order']
         self.coefficients = params['coefficients']
 
@@ -46,7 +50,7 @@ class QAM_Dataset_Nonlinear(Dataset):
 
     def __getitem__(self, idx):
         SNRdB = self.SNRdB_range[idx]
-        indices = self.generator.random_indices()
+        indices = self.indices_list[idx]
         x = self.generator.modulate(indices)
         #bit_seq = self.generator.map_to_bits(indices)
         y, H, noise_sigma, actual_SNRdB = self.generator.pass_channel(x, SNRdB)

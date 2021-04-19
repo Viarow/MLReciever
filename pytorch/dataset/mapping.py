@@ -64,7 +64,7 @@ class QAM_Mapping(object):
         for k in range(0, NT):
             real_k = real_idx[k]
             imag_k = imag_idx[k]
-            symbol_list.append(self.map[real_k] + self.map[imag_k])
+            symbol_list.append(self.map[imag_k] + self.map[real_k])
         
         bit_seq = ''.join(symbol_list)
         return bit_seq
