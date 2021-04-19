@@ -36,6 +36,17 @@ class QAM_Generator(object):
         indices_QAM = torch.randint(low=0, high=int(np.sqrt(self.mod_n)), size=(2*self.NT, ))
         return indices_QAM
 
+
+    def balanced_indices(self, repeat):
+        #TODO: this function is currently only available for SISO transmission
+        n = int(np.sqrt(self.mod_n))
+        indices_list = []
+        for real_idx in range(0, n):
+            for imag_idx in range(0, n):
+                indices_list.append(torch.Tensor([real_idx, imag_idx]).type(torch.int64))
+        return indices_list*repeat
+
+
     def modulate(self, indices):
         x = torch.gather(self.constellation, dim=0, index=indices)
         return x
@@ -81,6 +92,17 @@ class QAM_Generator_Nonlinear(object):
     def random_indices(self):
         indices_QAM = torch.randint(low=0, high=int(np.sqrt(self.mod_n)), size=(2*self.NT, ))
         return indices_QAM
+
+    
+    def balanced_indices(self, repeat):
+        #TODO: this function is currently only available for SISO transmission
+        n = int(np.sqrt(self.mod_n))
+        indices_list = []
+        for real_idx in range(0, n):
+            for imag_idx in range(0, n):
+                indices_list.append(torch.Tensor([real_idx, imag_idx]).type(torch.int64))
+        return indices_list*repeat
+
 
     def modulate(self, indices):
         x = torch.gather(self.constellation, dim=0, index=indices)

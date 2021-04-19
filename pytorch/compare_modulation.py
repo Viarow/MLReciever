@@ -39,16 +39,16 @@ MMNet_INFO = {
     'denoiser_name': 'MMNet_Denoiser',
     'num_layers': 10,
     'QAM_16':{
-        'ckpt_linear': 'experiments_AWGN_order2_mild/SISO_QAM16_AWGN_LINEAR_MMNet_500epochs/MMNet_10layers_epoch500.pth',
-        'ckpt_nonlinear': 'experiments_AWGN_order2_mild/SISO_QAM16_AWGN_NONLINEAR_MMNet_500epochs/MMNet_10layers_epoch500.pth'
+        'ckpt_linear': 'experiments_AWGN_order2_sharp/SISO_QAM16_AWGN_LINEAR_MMNet_500epochs/MMNet_10layers_epoch500.pth',
+        'ckpt_nonlinear': 'experiments_AWGN_order2_sharp/SISO_QAM16_AWGN_NONLINEAR_MMNet_500epochs/MMNet_10layers_epoch500.pth'
     },
     'QAM_64':{
-        'ckpt_linear': 'experiments_AWGN_order2_mild/SISO_QAM64_AWGN_LINEAR_MMNet_500epochs/MMNet_10layers_epoch500.pth',
-        'ckpt_nonlinear': 'experiments_AWGN_order2_mild/SISO_QAM64_AWGN_NONLINEAR_MMNet_500epochs/MMNet_10layers_epoch500.pth'
+        'ckpt_linear': 'experiments_AWGN_order2_sharp/SISO_QAM64_AWGN_LINEAR_MMNet_500epochs/MMNet_10layers_epoch500.pth',
+        'ckpt_nonlinear': 'experiments_AWGN_order2_sharp/SISO_QAM64_AWGN_NONLINEAR_MMNet_500epochs/MMNet_10layers_epoch500.pth'
     },
     'QAM_256':{
-        'ckpt_linear': 'experiments_AWGN_order2_mild/SISO_QAM256_AWGN_LINEAR_MMNet_500epochs/MMNet_10layers_epoch500.pth',
-        'ckpt_nonlinear': 'experiments_AWGN_order2_mild/SISO_QAM256_AWGN_NONLINEAR_MMNet_500epochs/MMNet_10layers_epoch500.pth'
+        'ckpt_linear': 'experiments_AWGN_order2_sharp/SISO_QAM256_AWGN_LINEAR_MMNet_500epochs/MMNet_10layers_epoch500.pth',
+        'ckpt_nonlinear': 'experiments_AWGN_order2_sharp/SISO_QAM256_AWGN_NONLINEAR_MMNet_500epochs/MMNet_10layers_epoch500.pth'
     }
 }
 
@@ -74,8 +74,49 @@ FCNet_INFO = {
 
 AMP_INFO = {
     'order': 2,
-    'coefficients': [1.0, -0.01]
+    'coefficients': [1.0, -0.1]
 }
+
+
+def SISO_Maximum_Likelihood(args, network_type, testloader):
+    SNR_list = []
+    SER_list = []
+    BER_list = []
+    mod_n = int(args.modulation.split('_')[1])
+    with torch.no_grad():
+        for i, data_blob in enumerate(testloader, 0):
+            indices = data_blob['indices']
+            SNRdB = data_blob['SNRdB']
+            if args.cuda:
+                x = data_blob['x'].cuda()
+                y = data_blob['y'].cuda()
+                H = data_blob['H'].cuda()
+                noise_sigma = data_blob['noise_sigma'].cuda()
+                constellation = get_QAMconstellation(mod_n).cuda()
+            else:
+                x = data_blob['x']
+                y = data_blob['y']
+                H = data_blob['H']
+                noise_sigma = data_blob['noise_sigma']
+                constellation = get_QAMconstellation(mod_n)
+
+            shape = y.shape
+            y = torch.reshape(y, (-1, 1))
+            constellation = torch.reshape(constellation, (1, -1))
+            indices_hat = torch.argmin(torch.abs(y - constellation), dim=1).type(torch.IntTensor)
+            indices_hat = torch.reshape(indices_hat, shape)
+
+            SNR_list.append(SNRdB[0])
+            SER = 1. - batch_symbol_acc(indices, indices_hat)
+            SER_list.append(SER)
+            
+            BER = 1. - batch_bit_acc(args, indices, indices_hat)
+            BER_list.append(BER)
+            info_format = network_type + ": SNRdB: {:.2f}, SER: {:.3f}, BER: {:.3f}"
+            print(info_format.format(SNRdB[0], SER, BER))
+
+    return np.asarray(SNR_list), np.asarray(SER_list), np.asarray(BER_list)
+
 
 
 def test_MMNet(args, network_type, model, testloader):
@@ -178,6 +219,12 @@ def test_one_modulation_MMNet(args, ReceiverModel, testloader_linear, testloader
     SER_results.update({'NMND': SER_array})
     BER_results.update({'NMND': BER_array})
 
+    # Maximum Likelihood for data with linearity
+    print("Maximum Likelihood for linear channel estimation")
+    SNR_array, SER_array, BER_array = SISO_Maximum_Likelihood(args, 'Maximum Likelihood', testloader_linear)
+    SER_results.update({'MLLD': SER_array})
+    BER_results.update({'MLLD': BER_array})
+
     return SNR_array, SER_results, BER_results
 
 
@@ -205,20 +252,28 @@ def test_one_modulation_FCNet(args, ReceiverModel, testloader_linear, testloader
     SER_results.update({'NMND': SER_array})
     BER_results.update({'NMND': BER_array})
 
+    # Maximum Likelihood for data with linearity
+    print("Maximum Likelihood for linear channel estimation")
+    SNR_array, SER_array, BER_array = SISO_Maximum_Likelihood(args, 'Maximum Likelihood', testloader_linear)
+    SER_results.update({'MLLD': SER_array})
+    BER_results.update({'MLLD': BER_array})
+
     return SNR_array, SER_results, BER_results
 
 
 def plot_subplots(SNRdB_range, record, ylabel, path):
     sns.set_style('whitegrid')
-    modulation = ['QAM_16', 'QAM_64', 'QAM_256']
+    #modulation = ['QAM_16', 'QAM_64', 'QAM_256']
+    modulation = ['QAM_16', 'QAM_64']
     counter = 0
-    fig, axs = plt.subplots(nrows=1, ncols=3, figsize=(15, 5), constrained_layout=False)
+    fig, axs = plt.subplots(nrows=1, ncols=2, figsize=(13, 7), constrained_layout=False)
     for ax in axs.flat:
         ax.set_title(modulation[counter])
         results = record[modulation[counter]]
         ax.plot(SNRdB_range, results['LMLD'], linewidth=2, label='train with linearity')
         ax.plot(SNRdB_range, results['LMND'], linewidth=2, label='test with non-linearity')
         ax.plot(SNRdB_range, results['NMND'], linewidth=2, label='re-train with non-linearity')
+        ax.plot(SNRdB_range, results['MLLD'], linewidth=2, label='Maximum likelihood with linearity')
         ax.set_yscale('log')
         ax.set_ylim(1e-3, 1)
         ax.set_xlabel('SNR(dB)')
@@ -226,7 +281,7 @@ def plot_subplots(SNRdB_range, record, ylabel, path):
         counter += 1
 
     handles, labels = ax.get_legend_handles_labels()
-    fig.legend(handles, labels, loc='lower center', ncol=3)
+    fig.legend(handles, labels, loc='upper right', ncol=2)
     fig.savefig(path, dpi=fig.dpi)
     print(path + ' saved.')
 
@@ -266,9 +321,9 @@ def compare_MMNet_QAM(args, fig_dir):
                     MMNet_INFO['num_layers'])
     if args.cuda:
         ReceiverModel = ReceiverModel.cuda()
-    testset_linear = QAM_Dataset(params, SNRdB_range_test)
+    testset_linear = QAM_Dataset(params, (args.test_size*args.batch_size_test), SNRdB_range_test)
     testloader_linear = DataLoader(testset_linear, batch_size=args.batch_size_test, shuffle=False, num_workers=2)
-    testset_nonlinear = QAM_Dataset_Nonlinear(params, SNRdB_range_test)
+    testset_nonlinear = QAM_Dataset_Nonlinear(params, (args.test_size*args.batch_size_test),SNRdB_range_test)
     testloader_nonlinear = DataLoader(testset_nonlinear, batch_size=args.batch_size_test, shuffle=False, num_workers=2)
 
     SNR_array, SER_results, BER_results = test_one_modulation_MMNet(args, ReceiverModel, testloader_linear, testloader_nonlinear, MMNet_INFO['QAM_16'])
@@ -288,9 +343,9 @@ def compare_MMNet_QAM(args, fig_dir):
                     MMNet_INFO['num_layers'])
     if args.cuda:
         ReceiverModel = ReceiverModel.cuda()
-    testset_linear = QAM_Dataset(params, SNRdB_range_test)
+    testset_linear = QAM_Dataset(params, (args.test_size*args.batch_size_test), SNRdB_range_test)
     testloader_linear = DataLoader(testset_linear, batch_size=args.batch_size_test, shuffle=False, num_workers=2)
-    testset_nonlinear = QAM_Dataset_Nonlinear(params, SNRdB_range_test)
+    testset_nonlinear = QAM_Dataset_Nonlinear(params, (args.test_size*args.batch_size_test), SNRdB_range_test)
     testloader_nonlinear = DataLoader(testset_nonlinear, batch_size=args.batch_size_test, shuffle=False, num_workers=2)
 
     SNR_array, SER_results, BER_results = test_one_modulation_MMNet(args, ReceiverModel, testloader_linear, testloader_nonlinear, MMNet_INFO['QAM_64'])
@@ -298,31 +353,31 @@ def compare_MMNet_QAM(args, fig_dir):
     BER_record.update({'QAM_64': BER_results})
 
     # QAM_256
-    params['modulation'] = 'QAM_256'
-    args.modulation = 'QAM_256'
-    mod_n = int(params['modulation'].split('_')[1])
-    if args.cuda:
-        constellation = get_QAMconstellation(mod_n).cuda()
-    else:
-        constellation = get_QAMconstellation(mod_n)
-    params['constellation'] = constellation
-    ReceiverModel = MMNet(params, MMNet_INFO['linear_name'], MMNet_INFO['denoiser_name'],
-                    MMNet_INFO['num_layers'])
-    if args.cuda:
-        ReceiverModel = ReceiverModel.cuda()
-    testset_linear = QAM_Dataset(params, SNRdB_range_test)
-    testloader_linear = DataLoader(testset_linear, batch_size=args.batch_size_test, shuffle=False, num_workers=2)
-    testset_nonlinear = QAM_Dataset_Nonlinear(params, SNRdB_range_test)
-    testloader_nonlinear = DataLoader(testset_nonlinear, batch_size=args.batch_size_test, shuffle=False, num_workers=2)
+    # params['modulation'] = 'QAM_256'
+    # args.modulation = 'QAM_256'
+    # mod_n = int(params['modulation'].split('_')[1])
+    # if args.cuda:
+    #     constellation = get_QAMconstellation(mod_n).cuda()
+    # else:
+    #     constellation = get_QAMconstellation(mod_n)
+    # params['constellation'] = constellation
+    # ReceiverModel = MMNet(params, MMNet_INFO['linear_name'], MMNet_INFO['denoiser_name'],
+    #                 MMNet_INFO['num_layers'])
+    # if args.cuda:
+    #     ReceiverModel = ReceiverModel.cuda()
+    # testset_linear = QAM_Dataset(params, SNRdB_range_test)
+    # testloader_linear = DataLoader(testset_linear, batch_size=args.batch_size_test, shuffle=False, num_workers=2)
+    # testset_nonlinear = QAM_Dataset_Nonlinear(params, SNRdB_range_test)
+    # testloader_nonlinear = DataLoader(testset_nonlinear, batch_size=args.batch_size_test, shuffle=False, num_workers=2)
 
-    SNR_array, SER_results, BER_results = test_one_modulation_MMNet(args, ReceiverModel, testloader_linear, testloader_nonlinear, MMNet_INFO['QAM_256'])
-    SER_record.update({'QAM_256': SER_results})
-    BER_record.update({'QAM_256': BER_results})
+    # SNR_array, SER_results, BER_results = test_one_modulation_MMNet(args, ReceiverModel, testloader_linear, testloader_nonlinear, MMNet_INFO['QAM_256'])
+    # SER_record.update({'QAM_256': SER_results})
+    # BER_record.update({'QAM_256': BER_results})
 
-    path = os.path.join(fig_dir, 'MMNet_QAM16_64_256_SER.png')
+    path = os.path.join(fig_dir, 'MMNet_QAM16_64_SER.png')
     plot_subplots(SNR_array, SER_record, 'SER', path)
     
-    path = os.path.join(fig_dir, 'MMNet_QAM16_64_256_BER.png')
+    path = os.path.join(fig_dir, 'MMNet_QAM16_64_BER.png')
     plot_subplots(SNR_array, BER_record, 'BER', path)
 
 
