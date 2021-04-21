@@ -261,15 +261,15 @@ def test_one_modulation_FCNet(args, ReceiverModel, testloader_linear, testloader
     return SNR_array, SER_results, BER_results
 
 
-def plot_subplots(SNRdB_range, record, ylabel, path):
+def plot_subplots(SNR_record, ER_record, ylabel, path):
     sns.set_style('whitegrid')
-    #modulation = ['QAM_16', 'QAM_64', 'QAM_256']
-    modulation = ['QAM_16', 'QAM_64']
+    modulation = ['QAM_16', 'QAM_64', 'QAM_256']
     counter = 0
-    fig, axs = plt.subplots(nrows=1, ncols=2, figsize=(13, 7), constrained_layout=False)
+    fig, axs = plt.subplots(nrows=1, ncols=3, figsize=(20, 7), constrained_layout=False)
     for ax in axs.flat:
         ax.set_title(modulation[counter])
-        results = record[modulation[counter]]
+        SNRdB_range = SNR_record[modulation[counter]]
+        results = ER_record[modulation[counter]]
         ax.plot(SNRdB_range, results['LMLD'], linewidth=2, label='train with linearity')
         ax.plot(SNRdB_range, results['LMND'], linewidth=2, label='test with non-linearity')
         ax.plot(SNRdB_range, results['NMND'], linewidth=2, label='re-train with non-linearity')
@@ -302,13 +302,13 @@ def compare_MMNet_QAM(args, fig_dir):
         'cuda': args.cuda
     }
 
-    SNRdB_range_test = np.linspace(args.SNRdB_min, args.SNRdB_max, args.test_size)
-    SNRdB_range_test = np.repeat(SNRdB_range_test, args.batch_size_test, axis=0)
-
+    SNR_record = {}
     SER_record = {}
     BER_record = {}
     
     # QAM_16
+    SNRdB_range_test = np.linspace(args.SNRdB_min, args.SNRdB_max, args.test_size)
+    SNRdB_range_test = np.repeat(SNRdB_range_test, args.batch_size_test, axis=0)
     params['modulation'] = 'QAM_16'
     args.modulation = 'QAM_16'
     mod_n = int(params['modulation'].split('_')[1])
@@ -327,10 +327,13 @@ def compare_MMNet_QAM(args, fig_dir):
     testloader_nonlinear = DataLoader(testset_nonlinear, batch_size=args.batch_size_test, shuffle=False, num_workers=2)
 
     SNR_array, SER_results, BER_results = test_one_modulation_MMNet(args, ReceiverModel, testloader_linear, testloader_nonlinear, MMNet_INFO['QAM_16'])
+    SNR_record.update({'QAM_16': SNR_array})
     SER_record.update({'QAM_16': SER_results})
     BER_record.update({'QAM_16': BER_results})
 
     # QAM_64
+    SNRdB_range_test = np.linspace(args.SNRdB_min, args.SNRdB_max+10, args.test_size+5)
+    SNRdB_range_test = np.repeat(SNRdB_range_test, args.batch_size_test, axis=0)
     params['modulation'] = 'QAM_64'
     args.modulation = 'QAM_64'
     mod_n = int(params['modulation'].split('_')[1])
@@ -343,42 +346,46 @@ def compare_MMNet_QAM(args, fig_dir):
                     MMNet_INFO['num_layers'])
     if args.cuda:
         ReceiverModel = ReceiverModel.cuda()
-    testset_linear = QAM_Dataset(params, (args.test_size*args.batch_size_test), SNRdB_range_test)
+    testset_linear = QAM_Dataset(params, (args.test_size+5)*args.batch_size_test, SNRdB_range_test)
     testloader_linear = DataLoader(testset_linear, batch_size=args.batch_size_test, shuffle=False, num_workers=2)
-    testset_nonlinear = QAM_Dataset_Nonlinear(params, (args.test_size*args.batch_size_test), SNRdB_range_test)
+    testset_nonlinear = QAM_Dataset_Nonlinear(params, (args.test_size+5)*args.batch_size_test, SNRdB_range_test)
     testloader_nonlinear = DataLoader(testset_nonlinear, batch_size=args.batch_size_test, shuffle=False, num_workers=2)
 
     SNR_array, SER_results, BER_results = test_one_modulation_MMNet(args, ReceiverModel, testloader_linear, testloader_nonlinear, MMNet_INFO['QAM_64'])
+    SNR_record.update({'QAM_64': SNR_array})
     SER_record.update({'QAM_64': SER_results})
     BER_record.update({'QAM_64': BER_results})
 
-    # QAM_256
-    # params['modulation'] = 'QAM_256'
-    # args.modulation = 'QAM_256'
-    # mod_n = int(params['modulation'].split('_')[1])
-    # if args.cuda:
-    #     constellation = get_QAMconstellation(mod_n).cuda()
-    # else:
-    #     constellation = get_QAMconstellation(mod_n)
-    # params['constellation'] = constellation
-    # ReceiverModel = MMNet(params, MMNet_INFO['linear_name'], MMNet_INFO['denoiser_name'],
-    #                 MMNet_INFO['num_layers'])
-    # if args.cuda:
-    #     ReceiverModel = ReceiverModel.cuda()
-    # testset_linear = QAM_Dataset(params, SNRdB_range_test)
-    # testloader_linear = DataLoader(testset_linear, batch_size=args.batch_size_test, shuffle=False, num_workers=2)
-    # testset_nonlinear = QAM_Dataset_Nonlinear(params, SNRdB_range_test)
-    # testloader_nonlinear = DataLoader(testset_nonlinear, batch_size=args.batch_size_test, shuffle=False, num_workers=2)
+    #QAM_256
+    SNRdB_range_test = np.linspace(args.SNRdB_min, args.SNRdB_max+20, args.test_size+10)
+    SNRdB_range_test = np.repeat(SNRdB_range_test, args.batch_size_test, axis=0)
+    params['modulation'] = 'QAM_256'
+    args.modulation = 'QAM_256'
+    mod_n = int(params['modulation'].split('_')[1])
+    if args.cuda:
+        constellation = get_QAMconstellation(mod_n).cuda()
+    else:
+        constellation = get_QAMconstellation(mod_n)
+    params['constellation'] = constellation
+    ReceiverModel = MMNet(params, MMNet_INFO['linear_name'], MMNet_INFO['denoiser_name'],
+                    MMNet_INFO['num_layers'])
+    if args.cuda:
+        ReceiverModel = ReceiverModel.cuda()
+    testset_linear = QAM_Dataset(params, (args.test_size+10)*args.batch_size_test, SNRdB_range_test)
+    testloader_linear = DataLoader(testset_linear, batch_size=args.batch_size_test, shuffle=False, num_workers=2)
+    testset_nonlinear = QAM_Dataset_Nonlinear(params, (args.test_size+10)*args.batch_size_test, SNRdB_range_test)
+    testloader_nonlinear = DataLoader(testset_nonlinear, batch_size=args.batch_size_test, shuffle=False, num_workers=2)
 
-    # SNR_array, SER_results, BER_results = test_one_modulation_MMNet(args, ReceiverModel, testloader_linear, testloader_nonlinear, MMNet_INFO['QAM_256'])
-    # SER_record.update({'QAM_256': SER_results})
-    # BER_record.update({'QAM_256': BER_results})
+    SNR_array, SER_results, BER_results = test_one_modulation_MMNet(args, ReceiverModel, testloader_linear, testloader_nonlinear, MMNet_INFO['QAM_256'])
+    SNR_record.update({'QAM_256': SNR_array})
+    SER_record.update({'QAM_256': SER_results})
+    BER_record.update({'QAM_256': BER_results})
 
-    path = os.path.join(fig_dir, 'MMNet_QAM16_64_SER.png')
-    plot_subplots(SNR_array, SER_record, 'SER', path)
+    path = os.path.join(fig_dir, 'MMNet_QAM16_64_256_SER.png')
+    plot_subplots(SNR_record, SER_record, 'SER', path)
     
-    path = os.path.join(fig_dir, 'MMNet_QAM16_64_BER.png')
-    plot_subplots(SNR_array, BER_record, 'BER', path)
+    path = os.path.join(fig_dir, 'MMNet_QAM16_64_256_BER.png')
+    plot_subplots(SNR_record, BER_record, 'BER', path)
 
 
 def compare_FCNet_QAM(args, fig_dir):
