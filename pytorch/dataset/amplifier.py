@@ -67,6 +67,12 @@ def get_complex_QAMconstellation(mod_n):
     return complex_constellation
 
 
+def signal_power(s):
+    # s is a torch tensor with dtype=cfloat
+    power = torch.mean(torch.square(s.abs()), dim=0)
+    return power
+
+
 def PA_effects_function(fig_dir):
 
     if not os.path.exists(fig_dir):
