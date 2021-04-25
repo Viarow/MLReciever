@@ -63,6 +63,13 @@ def batch_bit_acc(args, x_batch, y_batch):
     return float(acc/batch_size)
 
 
+def batch_signal_power(batch_signal):
+    # only available for SISO case
+    s = torch.view_as_complex(batch_signal)
+    power_vec = s.abs()
+    return torch.mean(power_vec).item()
+
+
 def count_parameters(model):
     return sum(p.numel() for p in model.parameters() if p.requires_grad)
 
